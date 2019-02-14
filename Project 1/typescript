@@ -1,0 +1,443 @@
+Script started on Thu 14 Feb 2019 12:50:01 AM EST
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ cat callTimer.cpp
+/*
+ * callTimer.cpp is a C++ OS utility for creating and timing new threads and processes.  This main function handles the rest 
+ * of the program and the other classes.
+ *
+ *  Created on: Feb 13, 2019
+ *      Author: Quentin Barnes
+ * 		CS Lab
+ * 
+ * Can be compiled uning the command g++ -pthread -o callTimer callTimer.cpp ThreadProcess.cpp
+ * Can be run using the command ./callTimer 
+ */
+
+#include "ThreadProcess.h"
+
+#include <string>
+#include <vector>
+using namespace std;
+
+
+bool thread = false;  	// Flag for the thread command line switch
+bool process = false;  	// Flag for the process command line switch
+int runTime = 1;		// How many repitions the program is set to do
+
+int main(int argc,char* argv[]) 
+{   
+	//Loops through all the command line args and tests to see which ones are present
+	vector<string> args(argv, argv+argc);
+	for (size_t i = 1; i < args.size(); ++i) {
+		if (args[i] == "-p" || args[i] == "-process") {
+			process = true;
+		} else if (args[i] == "-t" || args[i] == "-thread") {
+			thread = true;
+		} else if (args[i] == "-r") {
+			runTime = atoi(args[i+1].c_str());
+		}
+	}
+
+	//If neither of the flags were triggered, then the program returns an error and kills itself
+    if (!(process || thread)) {
+        fprintf(stderr, "Parse failed!\n NEEDS TO INCLUDE -process, -p, -thread, OR -t\n");
+        exit(1);
+    }
+
+    ThreadProcess tp;  // Creates the ThreadProcess class instance
+
+	//Depending on whether process or thread were triped, it calls thier respective commands from the ThreadProcess class
+    if (process) {
+    	tp.createProcesses(runTime);
+    }
+
+    if (thread) {
+    	tp.createThreads(runTime);
+    }
+
+    if (process) {
+    	tp.printTimesP();
+    }
+
+    if (thread) {
+    	tp.printTimesT();
+    }
+    
+}
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ cat ThreadProcess.h
+/*
+ * ThreadProcess.h is the header class for ThreadProcess.cpp.  It defines all the needed includes, functions, and variables for the class.
+ *
+ *  Created on: Feb 13, 2019
+ *      Author: Quentin Barnes
+ * 		CS LAB
+ */
+
+#ifndef THREADPROCESS_H_
+#define THREADPROCESS_H_
+
+#include "NanoTimer.h"
+
+#include <stdio.h>
+#include <unistd.h>
+#include <cstdlib>
+#include <csignal>
+#include <stdlib.h>
+#include <pthread.h>
+using namespace std;
+
+class ThreadProcess {
+public:
+	void createThreads(int times);
+	void createProcesses(int times);
+	void printTimesT();
+	void printTimesP();
+private:
+	NanoTimer ntp; //Timer for processes
+	NanoTimer ntt; //Timer for threads
+	double totalTimeThread = 0;
+	double totalTimeProcess = 0;
+	double runTimes = 1;
+};
+
+#endif /* THREADPROCESS_H_ */
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ cat ThreadProcess.cpp
+/*
+ * ThreadProcess.cpp is a class that can create and time processes and threads and print the average times that they took to create.
+ *
+ *  Created on: Feb 13, 2019
+ *      Author: Quentin Barnes
+ * 		CS LAB
+ */
+
+#include "ThreadProcess.h"
+
+/**
+ * Create Processes and Time Them
+ * recives: times, amount of processes to be creates
+ */
+void ThreadProcess::createProcesses(int times){
+	runTimes = times;
+	int i;//#include <iostream>
+	for (i = 0; i < times; i++) {
+		ntp.reset();  //resets the timer for the new run
+		ntp.start();
+		int pid = fork();  //creates a new fork
+		ntp.stop();
+		totalTimeProcess += ntp.getTotalTime();
+		if (pid < 0) { fprintf(stderr, "Fork failed!\n"); exit(1);}
+		else if (pid > 0) {
+			//Does nothing because the parent process doesnt print anything out.
+		}
+		else{
+			printf("Hello from the child process (PID = %d)\n", getpid());
+			kill(getpid(), SIGKILL); //kills the process so it doesnt run everything twice
+			}
+	}
+}
+
+/**
+ * Function for the child thread to call
+ * Used so that the child function can call it and write out its ID number
+ * recives: input, NULL
+ * 
+ */
+void* threadFun(void* input) {
+	pthread_t thId = pthread_self();
+	printf("Hello from the child thread (TID = %d) \n", thId);
+	pthread_exit(NULL);
+}
+
+/**
+ * Function that creates the thread processes and times them
+ * recives: times, amount of threads to be creates
+ */
+void ThreadProcess::createThreads(int times){
+	runTimes = times;
+	int j;
+	for (j = 0; j < times; j++) {
+		ntt.reset();  //resets the timer for the new run
+		pthread_t newThread;
+		ntt.start();
+		pthread_create(&newThread, NULL, threadFun, NULL);  //Creates a new thread
+		ntt.stop();
+		totalTimeThread += ntt.getTotalTime();
+		pthread_join(newThread, NULL); //Joins the new thread with the main thread, essentially killing it
+	}
+}
+
+/**
+ * Prints the average for how long the threads took to create
+ */
+void ThreadProcess::printTimesT(){
+	double averageTimeThread = totalTimeThread / runTimes;
+	printf("The average time for creating a thread is: %f\n", averageTimeThread);
+}
+
+/**
+ * Prints the average for how long the processes took to create
+ */
+void ThreadProcess::printTimesP(){
+	double averageTimeProcess = totalTimeProcess / runTimes;
+	printf("The average time for creating a process is: %f\n", averageTimeProcess);
+}
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ g++ -pthread -o callTimer callT imer.cpp ThreadProcess.cpp
+In file included from [01m[KcallTimer.cpp:13:0[m[K:
+[01m[KThreadProcess.h:31:27:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeThread = 0;
+[01;32m[K                           ^[m[K
+[01m[KThreadProcess.h:32:28:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeProcess = 0;
+[01;32m[K                            ^[m[K
+[01m[KThreadProcess.h:33:20:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double runTimes = 1;
+[01;32m[K                    ^[m[K
+In file included from [01m[KThreadProcess.cpp:9:0[m[K:
+[01m[KThreadProcess.h:31:27:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeThread = 0;
+[01;32m[K                           ^[m[K
+[01m[KThreadProcess.h:32:28:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeProcess = 0;
+[01;32m[K                            ^[m[K
+[01m[KThreadProcess.h:33:20:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double runTimes = 1;
+[01;32m[K                    ^[m[K
+[01m[KThreadProcess.cpp:[m[K In function '[01m[Kvoid* threadFun(void*)[m[K':
+[01m[KThreadProcess.cpp:43:58:[m[K [01;35m[Kwarning: [m[Kformat '[01m[K%d[m[K' expects argument of type '[01m[Kint[m[K', but argument 2 has type '[01m[Kpthread_t {aka long unsigned int}[m[K' [-Wformat=]
+  printf("Hello from the child thread (TID = %d) \n", thId);
+[01;32m[K                                                          ^[m[K
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./callTimer -p -t -r 100
+Hello from the child process (PID = 8124)
+Hello from the child process (PID = 8125)
+Hello from the child process (PID = 8126)
+Hello from the child process (PID = 8127)
+Hello from the child process (PID = 8128)
+Hello from the child process (PID = 8129)
+Hello from the child process (PID = 8130)
+Hello from the child process (PID = 8131)
+Hello from the child process (PID = 8132)
+Hello from the child process (PID = 8133)
+Hello from the child process (PID = 8134)
+Hello from the child process (PID = 8135)
+Hello from the child process (PID = 8136)
+Hello from the child process (PID = 8137)
+Hello from the child process (PID = 8138)
+Hello from the child process (PID = 8139)
+Hello from the child process (PID = 8140)
+Hello from the child process (PID = 8141)
+Hello from the child process (PID = 8142)
+Hello from the child process (PID = 8143)
+Hello from the child process (PID = 8144)
+Hello from the child process (PID = 8145)
+Hello from the child process (PID = 8146)
+Hello from the child process (PID = 8147)
+Hello from the child process (PID = 8148)
+Hello from the child process (PID = 8149)
+Hello from the child process (PID = 8150)
+Hello from the child process (PID = 8151)
+Hello from the child process (PID = 8152)
+Hello from the child process (PID = 8153)
+Hello from the child process (PID = 8154)
+Hello from the child process (PID = 8155)
+Hello from the child process (PID = 8156)
+Hello from the child process (PID = 8157)
+Hello from the child process (PID = 8158)
+Hello from the child process (PID = 8159)
+Hello from the child process (PID = 8160)
+Hello from the child process (PID = 8161)
+Hello from the child process (PID = 8162)
+Hello from the child process (PID = 8163)
+Hello from the child process (PID = 8164)
+Hello from the child process (PID = 8165)
+Hello from the child process (PID = 8166)
+Hello from the child process (PID = 8167)
+Hello from the child process (PID = 8168)
+Hello from the child process (PID = 8169)
+Hello from the child process (PID = 8170)
+Hello from the child process (PID = 8171)
+Hello from the child process (PID = 8172)
+Hello from the child process (PID = 8173)
+Hello from the child process (PID = 8174)
+Hello from the child process (PID = 8175)
+Hello from the child process (PID = 8176)
+Hello from the child process (PID = 8177)
+Hello from the child process (PID = 8178)
+Hello from the child process (PID = 8179)
+Hello from the child process (PID = 8180)
+Hello from the child process (PID = 8181)
+Hello from the child process (PID = 8182)
+Hello from the child process (PID = 8183)
+Hello from the child process (PID = 8184)
+Hello from the child process (PID = 8185)
+Hello from the child process (PID = 8186)
+Hello from the child process (PID = 8187)
+Hello from the child process (PID = 8188)
+Hello from the child process (PID = 8189)
+Hello from the child process (PID = 8190)
+Hello from the child process (PID = 8191)
+Hello from the child process (PID = 8192)
+Hello from the child process (PID = 8193)
+Hello from the child process (PID = 8194)
+Hello from the child process (PID = 8195)
+Hello from the child process (PID = 8196)
+Hello from the child process (PID = 8197)
+Hello from the child process (PID = 8198)
+Hello from the child process (PID = 8199)
+Hello from the child process (PID = 8200)
+Hello from the child process (PID = 8201)
+Hello from the child process (PID = 8202)
+Hello from the child process (PID = 8203)
+Hello from the child process (PID = 8204)
+Hello from the child process (PID = 8205)
+Hello from the child process (PID = 8206)
+Hello from the child process (PID = 8207)
+Hello from the child process (PID = 8208)
+Hello from the child process (PID = 8209)
+Hello from the child process (PID = 8210)
+Hello from the child process (PID = 8211)
+Hello from the child process (PID = 8212)
+Hello from the child process (PID = 8213)
+Hello from the child process (PID = 8214)
+Hello from the child process (PID = 8215)
+Hello from the child process (PID = 8216)
+Hello from the child process (PID = 8217)
+Hello from the child process (PID = 8218)
+Hello from the child process (PID = 8219)
+Hello from the child process (PID = 8220)
+Hello from the child process (PID = 8221)
+Hello from the child process (PID = 8222)
+Hello from the child process (PID = 8223)
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+Hello from the child thread (TID = -1407129856) 
+The average time for creating a process is: 0.000071
+The average time for creating a thread is: 0.000006
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./callTimer -t
+Hello from the child thread (TID = 928433920) 
+The average time for creating a thread is: 0.000050
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./ ca   callTimer -p -r 10
+Hello from the child process (PID = 8331)
+Hello from the child process (PID = 8332)
+Hello from the child process (PID = 8333)
+Hello from the child process (PID = 8334)
+Hello from the child process (PID = 8335)
+Hello from the child process (PID = 8336)
+Hello from the child process (PID = 8337)
+Hello from the child process (PID = 8338)
+The average time for creating a process is: 0.000160
+Hello from the child process (PID = 8339)
+Hello from the child process (PID = 8340)
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./callTimer 
+Parse failed!
+ NEEDS TO INCLUDE -process, -p, -thread, OR -t
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./callTimer -s
+Parse failed!
+ NEEDS TO INCLUDE -process, -p, -thread, OR -t
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./callTimer -tv
+Parse failed!
+ NEEDS TO INCLUDE -process, -p, -thread, OR -t
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./callTimer -thread
+Hello from the child thread (TID = -1592826112) 
+The average time for creating a thread is: 0.000070
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ ./callTimer -process
+The average time for creating a process is: 0.000158
+Hello from the child process (PID = 8350)
+qmb2@gold09:~/Desktop/GitStuff/CS-232/Project 1$ exit
+
+Script done on Thu 14 Feb 2019 12:52:18 AM EST
