@@ -1,0 +1,1041 @@
+Script started on Tue 26 Feb 2019 10:22:32 PM EST
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ cat callTimer.cpp
+/*
+ * callTimer.cpp is a C++ driver for reading the command line input and either launching the command line controller or
+ * or the text interface controller.
+ *
+ *  Created on: Feb 13, 2019
+ * 	Edited on:	Feb 26, 2019
+ *      Author: Quentin Barnes
+ * 		CS Lab
+ * 
+ * Can be compiled uning the command g++ -pthread -o callTimer callTimer.cpp ThreadProcess.cpp
+ * Can be run using the command ./callTimer 
+ */
+
+#include "CommandLineController.h"
+#include "TextBasedController.h"
+
+int main(int argc,char* argv[]) 
+{   
+	if(argc > 1){
+		CommandLineController CLC;
+		CLC.run(argc, argv);
+	} else {
+		TextBasedController TBC;
+		TBC.run();
+	}
+}
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ cat CommandLineController.h 
+/*
+ * CommandLineController.h is a class that will parse command line switches if present and use 
+ * the Model ThreadProcess.h effectively.  
+ * 
+ *  Created on: Feb 26, 2019
+ *      Author: Quentin Barnes
+ * 		CS LAB
+ */
+
+#ifndef COMMAND_LINE_CONTROLLER_H_
+#define COMMAND_LINE_CONTROLLER_H_
+
+#include "ThreadProcess.h"
+
+#include <string>
+#include <vector>
+#include <iostream>
+using namespace std;
+
+class CommandLineController {
+public:
+	void run(int argc,char* argv[]);
+private:
+    bool thread = false;  	// Flag for the thread command line switch
+    bool process = false;  	// Flag for the process command line switch
+    int timesToRun = 1;		// How many repitions the program is set to do
+    ThreadProcess tp;       // Makes an instance of the Model Class
+};
+
+
+void CommandLineController::run(int argc,char* argv[]){
+
+    //Loops through all the command line args and tests to see which ones are present
+    vector<string> args(argv, argv+argc);
+    for (size_t i = 1; i < args.size(); ++i) {
+		if (args[i] == "-p" || args[i] == "-process") {
+			process = true;
+		} else if (args[i] == "-t" || args[i] == "-thread") {
+			thread = true;
+		} else if (args[i] == "-r") {
+			timesToRun = atoi(args[i+1].c_str());
+		}
+	}
+
+    //If neither of the flags were triggered, then the program returns an error and kills itself
+    if (!(process || thread)) {
+        fprintf(stderr, "Parse failed!\n NEEDS TO INCLUDE -process, -p, -thread, OR -t\n");
+        exit(1);
+    }
+
+    //Creates processes or threads depending on the switches
+    if (process) {
+    	tp.createProcesses(timesToRun);
+    }
+
+    if (thread) {
+    	tp.createThreads(timesToRun);
+    }
+
+    //Sleeps so that processes and threads can finish creating
+    sleep(.2);
+
+    //Prints the times to create processes or threads depending on the switches
+    if (process) {
+    	try {
+            tp.printTimesP();
+        } catch (...) {
+            cout << "Couldnt Print Process Average";
+        }
+    }
+
+    if (thread) {
+        try {
+            tp.printTimesT();
+        } catch (...) {
+            cout << "Couldnt Print Thread Average";
+        }
+    }
+}
+
+
+#endif /* COMMAND_LINE_CONTROLLER_H_ */qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ cat TextBasedController.h 
+/*
+ * TextBasedController.h is a class that controls the text based UI for callTimer.cpp.  It calls and mannages 
+ * the UI (TextBasedUi.h) and the model (ThreadProcess.h).  
+ * 
+ *  Created on: Feb 26, 2019
+ *      Author: Quentin Barnes
+ * 		CS LAB
+ */
+
+#ifndef TEXT_BASED_CONTROLLER_H_
+#define TEXT_BASED_CONTROLLER_H_
+
+#include "ThreadProcess.h"
+#include "TextBasedUi.h"
+
+#include <iostream>
+using namespace std;
+
+class TextBasedController {
+public:
+	void run();
+    bool thread = false;  	        // Flag for if we run threads
+    bool process = false;  	        // Flag for if we run processes
+    bool threadPrint = false;  	    // Flag for reprinting thread
+    bool processPrint = false;      // Flag for reprinting process
+    bool error = false;	            // Flag if there is an invalid input
+    int timesToRun = 1;		        // How many repitions the program is set to do
+    int commandEntered;             
+private:
+    ThreadProcess tp;               // Model
+    TextBasedUi textUI;             // UI
+};
+
+/**
+ * Run() is what controls the TextBasedUI and ThreadProcess class.  It will run until 
+ * the user quits out of it
+ * 
+ * It isn't passed any values and doesnt return any values
+ * 
+ */
+void TextBasedController::run(){
+
+    //This allows the program to run until the user tells it to quit
+    while (true) {          
+        textUI.run(thread, process, timesToRun, error);  // Runs the UI passing it any info it needs
+        cin >> commandEntered;   // Grabs the number entered
+        cout << "\n";
+        switch (commandEntered)  // Uses the number entered to do what function it specified
+        {
+            //Lets the user change the amount of times the threads or processes should be created
+            case 1:
+                textUI.getRunTimes();
+                cin >> timesToRun;
+                if(timesToRun <= 0) {
+                    timesToRun = 1;
+                    cout << "Please enter a postive number";
+                }
+                error = false;
+                break;
+            //Sets the threads to either run or not
+            case 2:
+                thread = !thread;
+                error = false;
+                break;
+            //Sets the processes to either run or not
+            case 3:
+                process = !process;
+                error = false;
+                break;
+            //Runs the program with the paramaters given
+            case 4:
+                if (!process && !thread) {  //Makes sure either processes or threads are set to run
+                    cout << "Please select to run processes or threads or both.\n";
+                }
+                
+                //Creates processes or threads depending on the parameters
+                if (process) {
+                    tp.createProcesses(timesToRun);
+                }
+
+                if (thread) {
+                    tp.createThreads(timesToRun);
+                }
+
+                //Sleeps so that processes and threads can finish creating
+                sleep(.2);
+
+                //Prints how long it took to create processes or threads depending on the parameters
+                if (process) {
+                    try {
+                        tp.printTimesP();
+                    } catch (...) {
+                        cout << "Couldnt Print Process Average";
+                    }
+                }
+
+                if (thread) {
+                    try {
+                        tp.printTimesT();
+                    } catch (...) {
+                        cout << "Couldnt Print Thread Average";
+                    }
+                }
+                error = false;
+                break;
+            // Reprints the average times for treads
+            case 5:
+                try {
+                    tp.printTimesT();
+                } catch (...) {
+                    cout << "Couldnt Print Thread Average\n";
+                }
+                error = false;
+                break;
+            // Reprints the average times for processes
+            case 6:
+                try {
+                    tp.printTimesP();
+                } catch (...) {
+                    cout << "Couldnt Print Process Average\n";
+                }
+                error = false;
+                break;
+            //Quits the program
+            case 7:
+                exit(1);
+                break;
+
+            //If no case was called, throws an error
+            default:
+                error = true;
+                break;
+        }
+    }
+}
+
+
+#endif /* TEXT_BASED_CONTROLLER_H_ */qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ cat T typescript            text    TextBasedUi.h 
+/*
+ * TextBasedUi.h is the class that mannages the UI for the controller (TextBasedController.h).  Based on 
+ * the parameters it's given, it will display them and the users options for inputs.
+ * 
+ *  Created on: Feb 26, 2019
+ *      Author: Quentin Barnes
+ * 		CS LAB
+ */
+
+#ifndef TEXT_BASED_UI_H_
+#define TEXT_BASED_UI_H_
+
+#include <iostream>
+using namespace std;
+
+class TextBasedUi {
+public:
+	void run(bool threadNew, bool processNew, int timeToRunNew, bool errorNew);
+    void getRunTimes();
+    bool error = false;             // Flag for an input error
+    bool thread = false;  	        // Flag for if the threads run
+    bool process = false;  	        // Flag for if the process run
+    int timesToRun = 1;		        // How many repitions the program is set to do
+private:
+};
+
+/**
+ * run() is used to create the UI with the given parameters that are updated everytime 
+ * the function is called.  It is a simple text based UI that prints the users options 
+ * then allows them to enter their input.
+ * recives: bool threadNew - If the threads are being run
+ *          bool processNew - If the processes are being run
+ *          int timeToRunNew - How many times the program will run
+ *          bool errorNew - If there was an error last time
+ * returns: nothing
+ */
+void TextBasedUi::run(bool threadNew, bool processNew, int timeToRunNew, bool errorNew){
+    //Saves the values locally
+    thread = threadNew;
+    process = processNew;
+    timesToRun = timeToRunNew;
+    error = errorNew;
+
+    //Writes out the UI
+    cout << "\n-------------------------\n\n-------------------------\n\nTimes to run: \t\t" << timesToRun << "\nRun Threads: \t\t";
+    if(thread) {
+        cout << "Yes";
+    } else {
+        cout << "No";
+    }
+    cout << "\nRun Processes: \t\t";
+    if(process) {
+        cout << "Yes";
+    } else {
+        cout << "No";
+    }
+
+    cout << "\n\n-------------------------\n\n" <<
+    "1:\tChange amount of run times\n" <<
+    "2:\tChange if threads are run\n" <<
+    "3:\tChange if processes are run\n" <<
+    "4:\tRUN with the given parameters\n" <<
+    "5:\tRe-print the average time for threads to be created during the last run\n" <<
+    "6:\tRe-print the average time for processes to be created during the last run\n" <<
+    "7:\tQUIT\n\n-------------------------\n\n";
+
+    //Displays error if needed
+    if(error) {  
+        cout << "Please enter a valid input of a number from 1-6\n";
+    }
+
+    cout << "Enter a number to continue: ";
+
+}
+
+/**
+ * getRunTimes() is used to allow the user to update how many times they want processes 
+ * and threads to be created
+ * It is passed and returns nothing
+ */
+void TextBasedUi::getRunTimes() {
+    cout << "\n\n-------------------------\n\n"
+    << "Enter amount of times to run: ";
+}
+
+
+#endif /* TEXT_BASED_UI_H_ */qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ cp at ThreadProcess.h
+/*
+ * ThreadProcess.h is the header class for ThreadProcess.cpp.  It defines all the needed includes, functions, 
+ * and variables for the class.  This is the Model class that the interfaces use.
+ *
+ *  Created on: Feb 13, 2019
+ *      Author: Quentin Barnes
+ * 		CS LAB
+ */
+
+#ifndef THREADPROCESS_H_
+#define THREADPROCESS_H_
+
+#include "NanoTimer.h"
+
+#include <stdio.h>
+#include <unistd.h>
+#include <cstdlib>
+#include <csignal>
+#include <stdlib.h>
+#include <pthread.h>
+using namespace std;
+
+class ThreadProcess {
+public:
+	void createThreads(int times);
+	void createProcesses(int times);
+	void printTimesT();
+	void printTimesP();
+private:
+	NanoTimer ntp; //Timer for processes
+	NanoTimer ntt; //Timer for threads
+	double totalTimeThread = 0;
+	double totalTimeProcess = 0;
+	double runTimes = 1;
+};
+
+#endif /* THREADPROCESS_H_ */
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ cat ThreadProcess.h cpp
+/*
+ * ThreadProcess.cpp is a class that can create and time processes and threads and print the average times that they took to create.
+ *
+ *  Created on: Feb 13, 2019
+ *      Author: Quentin Barnes
+ * 		CS LAB
+ */
+
+#include "ThreadProcess.h"
+
+/**
+ * Create Processes and Time Them
+ * recives: times, amount of processes to be creates
+ */
+void ThreadProcess::createProcesses(int times){
+	runTimes = times;
+	int i;//#include <iostream>
+	for (i = 0; i < times; i++) {
+		ntp.reset();  //resets the timer for the new run
+		ntp.start();
+		int pid = fork();  //creates a new fork
+		ntp.stop();
+		totalTimeProcess += ntp.getTotalTime();
+		if (pid < 0) { fprintf(stderr, "Fork failed!\n"); exit(1);}
+		else if (pid > 0) {
+			//Does nothing because the parent process doesnt print anything out.
+		}
+		else{
+			printf("Hello from the child process (PID = %d)\n", getpid());
+			kill(getpid(), SIGKILL); //kills the process so it doesnt run everything twice
+			}
+	}
+}
+
+/**
+ * Function for the child thread to call
+ * Used so that the child function can call it and write out its ID number
+ * recives: input, NULL
+ * 
+ */
+void* threadFun(void* input) {
+	pthread_t thId = pthread_self();
+	printf("Hello from the child thread (TID = %lu) \n", thId);
+	pthread_exit(NULL);
+}
+
+/**
+ * Function that creates the thread processes and times them
+ * recives: times, amount of threads to be creates
+ */
+void ThreadProcess::createThreads(int times){
+	runTimes = times;
+	int j;
+	for (j = 0; j < times; j++) {
+		ntt.reset();  //resets the timer for the new run
+		pthread_t newThread;
+		ntt.start();
+		pthread_create(&newThread, NULL, threadFun, NULL);  //Creates a new thread
+		ntt.stop();
+		totalTimeThread += ntt.getTotalTime();
+		pthread_join(newThread, NULL); //Joins the new thread with the main thread, essentially killing it
+	}
+}
+
+/**
+ * Prints the average for how long the threads took to create
+ */
+void ThreadProcess::printTimesT(){
+	double averageTimeThread = totalTimeThread / runTimes;
+	printf("The average time for creating a thread is: %f\n", averageTimeThread);
+}
+
+/**
+ * Prints the average for how long the processes took to create
+ */
+void ThreadProcess::printTimesP(){
+	double averageTimeProcess = totalTimeProcess / runTimes;
+	printf("The average time for creating a process is: %f\n", averageTimeProcess);
+}
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ g++ -pthread -o callTimer callTimer.cpp ThreadProcess.cpp
+In file included from [01m[KCommandLineController.h:13:0[m[K,
+                 from [01m[KcallTimer.cpp:14[m[K:
+[01m[KThreadProcess.h:32:27:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeThread = 0;
+[01;32m[K                           ^[m[K
+[01m[KThreadProcess.h:33:28:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeProcess = 0;
+[01;32m[K                            ^[m[K
+[01m[KThreadProcess.h:34:20:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double runTimes = 1;
+[01;32m[K                    ^[m[K
+In file included from [01m[KcallTimer.cpp:14:0[m[K:
+[01m[KCommandLineController.h:24:19:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool thread = false;   // Flag for the thread command line switch
+[01;32m[K                   ^[m[K
+[01m[KCommandLineController.h:25:20:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool process = false;   // Flag for the process command line switch
+[01;32m[K                    ^[m[K
+[01m[KCommandLineController.h:26:22:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     int timesToRun = 1;  // How many repitions the program is set to do
+[01;32m[K                      ^[m[K
+In file included from [01m[KTextBasedController.h:14:0[m[K,
+                 from [01m[KcallTimer.cpp:15[m[K:
+[01m[KTextBasedUi.h:20:18:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool error = false;             // Flag for an input error
+[01;32m[K                  ^[m[K
+[01m[KTextBasedUi.h:21:19:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool thread = false;           // Flag for if the threads run
+[01;32m[K                   ^[m[K
+[01m[KTextBasedUi.h:22:20:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool process = false;           // Flag for if the process run
+[01;32m[K                    ^[m[K
+[01m[KTextBasedUi.h:23:22:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     int timesToRun = 1;          // How many repitions the program is set to do
+[01;32m[K                      ^[m[K
+In file included from [01m[KcallTimer.cpp:15:0[m[K:
+[01m[KTextBasedController.h:22:19:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool thread = false;           // Flag for if we run threads
+[01;32m[K                   ^[m[K
+[01m[KTextBasedController.h:23:20:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool process = false;           // Flag for if we run processes
+[01;32m[K                    ^[m[K
+[01m[KTextBasedController.h:24:24:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool threadPrint = false;       // Flag for reprinting thread
+[01;32m[K                        ^[m[K
+[01m[KTextBasedController.h:25:25:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool processPrint = false;      // Flag for reprinting process
+[01;32m[K                         ^[m[K
+[01m[KTextBasedController.h:26:18:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     bool error = false;             // Flag if there is an invalid input
+[01;32m[K                  ^[m[K
+[01m[KTextBasedController.h:27:22:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+     int timesToRun = 1;          // How many repitions the program is set to do
+[01;32m[K                      ^[m[K
+In file included from [01m[KThreadProcess.cpp:9:0[m[K:
+[01m[KThreadProcess.h:32:27:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeThread = 0;
+[01;32m[K                           ^[m[K
+[01m[KThreadProcess.h:33:28:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double totalTimeProcess = 0;
+[01;32m[K                            ^[m[K
+[01m[KThreadProcess.h:34:20:[m[K [01;35m[Kwarning: [m[Knon-static data member initializers only available with -std=c++11 or -std=gnu++11
+  double runTimes = 1;
+[01;32m[K                    ^[m[K
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ ./callTimer -p -t -r 10
+Hello from the child process (PID = 28017)
+Hello from the child process (PID = 28018)
+Hello from the child process (PID = 28019)
+Hello from the child process (PID = 28020)
+Hello from the child process (PID = 28021)
+Hello from the child process (PID = 28022)
+Hello from the child process (PID = 28023)
+Hello from the child process (PID = 28024)
+Hello from the child process (PID = 28025)
+Hello from the child process (PID = 28026)
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+Hello from the child thread (TID = 140515238856448) 
+The average time for creating a process is: 0.000126
+The average time for creating a thread is: 0.000031
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ ./callTimer -d
+Parse failed!
+ NEEDS TO INCLUDE -process, -p, -thread, OR -t
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ ./callTimer -p
+The average time for creating a process is: 0.000158
+Hello from the child process (PID = 28067)
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ ./callTimer -process
+The average time for creating a process is: 0.000169
+Hello from the child process (PID = 28083)
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ ./callTimer -process       thread
+Hello from the child thread (TID = 140060325295872) 
+The average time for creating a thread is: 0.000017
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ ./callTimer 
+
+-------------------------
+
+-------------------------
+
+Times to run: 		1
+Run Threads: 		No
+Run Processes: 		No
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 1
+
+
+
+-------------------------
+
+Enter amount of times to run: 100
+
+-------------------------
+
+-------------------------
+
+Times to run: 		100
+Run Threads: 		No
+Run Processes: 		No
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 2
+
+
+-------------------------
+
+-------------------------
+
+Times to run: 		100
+Run Threads: 		Yes
+Run Processes: 		No
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 3
+
+
+-------------------------
+
+-------------------------
+
+Times to run: 		100
+Run Threads: 		Yes
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 4
+
+Hello from the child process (PID = 28105)
+Hello from the child process (PID = 28106)
+Hello from the child process (PID = 28107)
+Hello from the child process (PID = 28108)
+Hello from the child process (PID = 28109)
+Hello from the child process (PID = 28110)
+Hello from the child process (PID = 28111)
+Hello from the child process (PID = 28112)
+Hello from the child process (PID = 28113)
+Hello from the child process (PID = 28114)
+Hello from the child process (PID = 28115)
+Hello from the child process (PID = 28116)
+Hello from the child process (PID = 28117)
+Hello from the child process (PID = 28118)
+Hello from the child process (PID = 28119)
+Hello from the child process (PID = 28120)
+Hello from the child process (PID = 28121)
+Hello from the child process (PID = 28123)
+Hello from the child process (PID = 28124)
+Hello from the child process (PID = 28125)
+Hello from the child process (PID = 28126)
+Hello from the child process (PID = 28127)
+Hello from the child process (PID = 28128)
+Hello from the child process (PID = 28122)
+Hello from the child process (PID = 28129)
+Hello from the child process (PID = 28130)
+Hello from the child process (PID = 28131)
+Hello from the child process (PID = 28134)
+Hello from the child process (PID = 28135)
+Hello from the child process (PID = 28145)
+Hello from the child process (PID = 28146)
+Hello from the child process (PID = 28147)
+Hello from the child process (PID = 28148)
+Hello from the child process (PID = 28149)
+Hello from the child process (PID = 28150)
+Hello from the child process (PID = 28151)
+Hello from the child process (PID = 28152)
+Hello from the child process (PID = 28153)
+Hello from the child process (PID = 28154)
+Hello from the child process (PID = 28155)
+Hello from the child process (PID = 28156)
+Hello from the child process (PID = 28157)
+Hello from the child process (PID = 28158)
+Hello from the child process (PID = 28159)
+Hello from the child process (PID = 28160)
+Hello from the child process (PID = 28161)
+Hello from the child process (PID = 28162)
+Hello from the child process (PID = 28163)
+Hello from the child process (PID = 28164)
+Hello from the child process (PID = 28165)
+Hello from the child process (PID = 28166)
+Hello from the child process (PID = 28167)
+Hello from the child process (PID = 28168)
+Hello from the child process (PID = 28182)
+Hello from the child process (PID = 28183)
+Hello from the child process (PID = 28184)
+Hello from the child process (PID = 28185)
+Hello from the child process (PID = 28199)
+Hello from the child process (PID = 28200)
+Hello from the child process (PID = 28201)
+Hello from the child process (PID = 28202)
+Hello from the child process (PID = 28203)
+Hello from the child process (PID = 28204)
+Hello from the child process (PID = 28205)
+Hello from the child process (PID = 28207)
+Hello from the child process (PID = 28208)
+Hello from the child process (PID = 28209)
+Hello from the child process (PID = 28210)
+Hello from the child process (PID = 28211)
+Hello from the child process (PID = 28212)
+Hello from the child process (PID = 28213)
+Hello from the child process (PID = 28214)
+Hello from the child process (PID = 28215)
+Hello from the child process (PID = 28216)
+Hello from the child process (PID = 28217)
+Hello from the child process (PID = 28218)
+Hello from the child process (PID = 28219)
+Hello from the child process (PID = 28220)
+Hello from the child process (PID = 28223)
+Hello from the child process (PID = 28234)
+Hello from the child process (PID = 28235)
+Hello from the child process (PID = 28236)
+Hello from the child process (PID = 28237)
+Hello from the child process (PID = 28238)
+Hello from the child process (PID = 28239)
+Hello from the child process (PID = 28240)
+Hello from the child process (PID = 28241)
+Hello from the child process (PID = 28268)
+Hello from the child process (PID = 28269)
+Hello from the child process (PID = 28283)
+Hello from the child process (PID = 28297)
+Hello from the child process (PID = 28298)
+Hello from the child process (PID = 28299)
+Hello from the child process (PID = 28300)
+Hello from the child process (PID = 28301)
+Hello from the child process (PID = 28302)
+Hello from the child process (PID = 28303)
+Hello from the child process (PID = 28304)
+Hello from the child process (PID = 28305)
+Hello from the child process (PID = 28306)
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+Hello from the child thread (TID = 140100587763456) 
+The average time for creating a process is: 0.000084
+The average time for creating a thread is: 0.000007
+
+-------------------------
+
+-------------------------
+
+Times to run: 		100
+Run Threads: 		Yes
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 5
+
+The average time for creating a thread is: 0.000007
+
+-------------------------
+
+-------------------------
+
+Times to run: 		100
+Run Threads: 		Yes
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 6
+
+The average time for creating a process is: 0.000084
+
+-------------------------
+
+-------------------------
+
+Times to run: 		100
+Run Threads: 		Yes
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 9
+
+
+-------------------------
+
+-------------------------
+
+Times to run: 		100
+Run Threads: 		Yes
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Please enter a valid input of a number from 1-6
+Enter a number to continue: 1
+
+
+
+-------------------------
+
+Enter amount of times to run: 15
+
+-------------------------
+
+-------------------------
+
+Times to run: 		15
+Run Threads: 		Yes
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 2
+
+
+-------------------------
+
+-------------------------
+
+Times to run: 		15
+Run Threads: 		No
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 4
+
+Hello from the child process (PID = 28469)
+Hello from the child process (PID = 28470)
+Hello from the child process (PID = 28471)
+Hello from the child process (PID = 28472)
+Hello from the child process (PID = 28473)
+Hello from the child process (PID = 28474)
+Hello from the child process (PID = 28475)
+Hello from the child process (PID = 28476)
+Hello from the child process (PID = 28477)
+Hello from the child process (PID = 28478)
+Hello from the child process (PID = 28479)
+Hello from the child process (PID = 28480)
+Hello from the child process (PID = 28481)
+Hello from the child process (PID = 28482)
+The average time for creating a process is: 0.000775
+
+-------------------------
+
+-------------------------
+
+Times to run: 		15
+Run Threads: 		No
+Run Processes: 		Yes
+
+-------------------------
+
+1:	Change amount of run times
+2:	Change if threads are run
+3:	Change if processes are run
+4:	RUN with the given parameters
+5:	Re-print the average time for threads to be created during the last run
+Hello from the child process (PID = 28483)
+6:	Re-print the average time for processes to be created during the last run
+7:	QUIT
+
+-------------------------
+
+Enter a number to continue: 7
+
+qmb2@gold34:~/Desktop/GitStuff/CS-232/Project 2$ exit
+
+Script done on Tue 26 Feb 2019 10:31:23 PM EST
