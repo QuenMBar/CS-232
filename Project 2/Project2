@@ -1,0 +1,179 @@
+Script started on Sat 09 Mar 2019 11:21:40 PM EST
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ cp -r /home/cs/232/projects/2/2 019 .
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ cd 2019/
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ du
+32	./partC/goodbye
+272	./partC/coreTest
+4	./partC/.secret/S2
+272	./partC/.secret/testCore
+32	./partC/.secret/S3/S3a/goodbye
+64	./partC/.secret/S3/S3a
+52	./partC/.secret/S3/S3b
+136	./partC/.secret/S3/S3c
+256	./partC/.secret/S3
+52	./partC/.secret/S1/S1b
+136	./partC/.secret/S1/S1c
+32	./partC/.secret/S1/S1a/goodbye
+64	./partC/.secret/S1/S1a
+256	./partC/.secret/S1
+792	./partC/.secret
+1128	./partC
+4	./partB/B2
+136	./partB/B1/B1c
+32	./partB/B1/B1a/goodbye
+64	./partB/B1/B1a
+52	./partB/B1/B1b
+256	./partB/B1
+52	./partB/B3/B3b
+136	./partB/B3/B3c
+32	./partB/B3/B3a/goodbye
+64	./partB/B3/B3a
+256	./partB/B3
+520	./partB
+32	./partA/goodbye
+272	./partA/coreTest
+336	./partA
+1988	.
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ cd ..
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ ./clean.sh -q 2019/partA
+Arguments supplied: -q
+Arguments supplied: 2019/partA
+DONE
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ cd 2019    / 2019/
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ cd 2019/[Kdu
+32	./partC/goodbye
+272	./partC/coreTest
+4	./partC/.secret/S2
+272	./partC/.secret/testCore
+32	./partC/.secret/S3/S3a/goodbye
+64	./partC/.secret/S3/S3a
+52	./partC/.secret/S3/S3b
+136	./partC/.secret/S3/S3c
+256	./partC/.secret/S3
+52	./partC/.secret/S1/S1b
+136	./partC/.secret/S1/S1c
+32	./partC/.secret/S1/S1a/goodbye
+64	./partC/.secret/S1/S1a
+256	./partC/.secret/S1
+792	./partC/.secret
+1128	./partC
+4	./partB/B2
+136	./partB/B1/B1c
+32	./partB/B1/B1a/goodbye
+64	./partB/B1/B1a
+52	./partB/B1/B1b
+256	./partB/B1
+52	./partB/B3/B3b
+136	./partB/B3/B3c
+32	./partB/B3/B3a/goodbye
+64	./partB/B3/B3a
+256	./partB/B3
+520	./partB
+12	./partA/goodbye
+12	./partA/coreTest
+36	./partA
+1688	.
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ cd ..
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ cp -r /home/cs/232/projects/2/2 019 .
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ cd 2019/
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ du
+32	./partC/goodbye
+272	./partC/coreTest
+4	./partC/.secret/S2
+272	./partC/.secret/testCore
+32	./partC/.secret/S3/S3a/goodbye
+64	./partC/.secret/S3/S3a
+52	./partC/.secret/S3/S3b
+136	./partC/.secret/S3/S3c
+256	./partC/.secret/S3
+52	./partC/.secret/S1/S1b
+136	./partC/.secret/S1/S1c
+32	./partC/.secret/S1/S1a/goodbye
+64	./partC/.secret/S1/S1a
+256	./partC/.secret/S1
+792	./partC/.secret
+1128	./partC
+4	./partB/B2
+136	./partB/B1/B1c
+32	./partB/B1/B1a/goodbye
+64	./partB/B1/B1a
+52	./partB/B1/B1b
+256	./partB/B1
+52	./partB/B3/B3b
+136	./partB/B3/B3c
+32	./partB/B3/B3a/goodbye
+64	./partB/B3/B3a
+256	./partB/B3
+520	./partB
+32	./partA/goodbye
+272	./partA/coreTest
+336	./partA
+1988	.
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ cd ..
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ ./clean.sh part    2019/partA -i
+Arguments supplied: 2019/partA
+Arguments supplied: -i
+MOVING TO DIRECTORY:  coreTest
+core
+Do you want to remove  core ? Reply "y" for yes.
+y
+coreTest
+Do you want to remove  coreTest ? Reply "y" for yes.
+y
+MOVING TO DIRECTORY:  goodbye
+goodbye
+Do you want to remove  goodbye ? Reply "y" for yes.
+
+#goodbye.c#
+Do you want to remove  #goodbye.c# ? Reply "y" for yes.
+n
+goodbye.c~
+Do you want to remove  goodbye.c~ ? Reply "y" for yes.
+y
+hello
+Do you want to remove  hello ? Reply "y" for yes.
+n
+#hello.c#
+Do you want to remove  #hello.c# ? Reply "y" for yes.
+
+hello.c~
+Do you want to remove  hello.c~ ? Reply "y" for yes.
+y
+DONE
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2$ cd 2019/
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ du
+32	./partC/goodbye
+272	./partC/coreTest
+4	./partC/.secret/S2
+272	./partC/.secret/testCore
+32	./partC/.secret/S3/S3a/goodbye
+64	./partC/.secret/S3/S3a
+52	./partC/.secret/S3/S3b
+136	./partC/.secret/S3/S3c
+256	./partC/.secret/S3
+52	./partC/.secret/S1/S1b
+136	./partC/.secret/S1/S1c
+32	./partC/.secret/S1/S1a/goodbye
+64	./partC/.secret/S1/S1a
+256	./partC/.secret/S1
+792	./partC/.secret
+1128	./partC
+4	./partB/B2
+136	./partB/B1/B1c
+32	./partB/B1/B1a/goodbye
+64	./partB/B1/B1a
+52	./partB/B1/B1b
+256	./partB/B1
+52	./partB/B3/B3b
+136	./partB/B3/B3c
+32	./partB/B3/B3a/goodbye
+64	./partB/B3/B3a
+256	./partB/B3
+520	./partB
+28	./partA/goodbye
+12	./partA/coreTest
+68	./partA
+1720	.
+qmb2@gold05:~/Desktop/GitStuff/CS-232/Project 2/2019$ exit
+
+Script done on Sat 09 Mar 2019 11:25:24 PM EST
