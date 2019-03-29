@@ -121,10 +121,10 @@ cleanDirectory()
 				rm $file
 			else
 				echo "Do you want to remove " $file "? Reply \"y\" for yes."
-				read respone
-				if [ -n "$respone" ]
+				read char
+				if [ -n "$char" ]
 				then
-					if [ $respone = "y" ]
+					if [ $char = "y" ]
 					then 
 						rm $file
 					fi
