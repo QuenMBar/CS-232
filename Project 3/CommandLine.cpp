@@ -12,60 +12,52 @@ CommandLine::CommandLine(istream &in)
 {
     getline(in, commandEntered);
     argc = 0;
-    int otherInc = 0;
     for (int i = 0; i < commandEntered.size(); i++)
     {
-        if (commandEntered.find(" ", otherInc) == i)
+        if ((commandEntered[i] == ' ') && (commandEntered[i + 1] != ' '))
         {
-            otherInc = i + 1;
             argc++;
         }
-        else if (commandEntered.find(" ", otherInc) == otherInc + 1)
-        {
-            otherInc++;
-        }
     }
-    if (commandEntered.find(" ", commandEntered.size() - 1) != (commandEntered.size() - 1))
+    if (commandEntered[commandEntered.size() - 1] != ' ')
     {
         argc++;
     }
-
-    argv = (char *)calloc(argc, 10);
-    otherInc = 0;
-    int otherOtherInc = 0;
+    char **test = (char **)calloc(4, sizeof(char *));
+    int otherInc = 0;
+    int lastInc = 0;
     for (int i = 0; i < commandEntered.size(); i++)
     {
-        cout << "For " << i << ": ";
-        if (commandEntered.find(" ", otherInc) == 0)
+        if ((commandEntered[i] == ' ') && (commandEntered[i + 1] != ' '))
         {
-            otherInc++;
-        }
-        else if (commandEntered.find(" ", otherInc) == i)
-        {
-            cout << otherInc << ": " << i << "\n"
-                 << flush;
-            strcpy(&argv[otherOtherInc], commandEntered.substr(otherInc, i - otherInc).c_str());
-            cout << "Substrings: " << commandEntered.substr(otherInc, i - otherInc) << "\n"
-                 << flush;
+            // test[lastInc] = (char *)commandEntered.substr(otherInc, i - otherInc).c_str();
             otherInc = i + 1;
-            otherOtherInc++;
+            lastInc++;
         }
     }
-    if (commandEntered.find(" ", commandEntered.size() - 1) != (commandEntered.size() - 1))
+    if (commandEntered[commandEntered.size() - 1] != ' ')
     {
-        strcpy(&argv[otherOtherInc], commandEntered.substr(otherInc, commandEntered.size() - 1).c_str());
-        cout << "Substrings: " << commandEntered.substr(otherInc, commandEntered.size() - 1) << "\n"
-             << flush;
+        // char *newTempStr = (char *)commandEntered.substr(otherInc, commandEntered.size() - 1 - otherInc).c_str();
+        // test[lastInc] = newTempStr;
     }
+    test[0] = "Help";
+    test[1] = "me";
+    test[2] = "please";
+    test[3] = "guys";
+    cout << "Testing: " << *test+1 << "\n"
+         << flush;
+    argv = test;
 }
 
 void CommandLine::printCommand()
 {
     cout << "\n"
          << argc << "\n\n";
-    for (int i = 0; i < argc; i++)
-    {
-        cout << argv[i] << "\n";
-    }
+    // for (int i = 0; i < 1; i++)
+    // {
+    //     cout << argv[i] << "\n";
+    // }
+
+    cout << *argv[0] << "\n";
     cout << flush;
 }
