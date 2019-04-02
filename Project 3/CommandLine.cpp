@@ -11,53 +11,38 @@
 CommandLine::CommandLine(istream &in)
 {
     getline(in, commandEntered);
-    argc = 0;
-    for (int i = 0; i < commandEntered.size(); i++)
-    {
-        if ((commandEntered[i] == ' ') && (commandEntered[i + 1] != ' '))
-        {
-            argc++;
-        }
-    }
-    if (commandEntered[commandEntered.size() - 1] != ' ')
-    {
-        argc++;
-    }
-    char **test = (char **)calloc(4, sizeof(char *));
+    vector<string> myStringVec;
     int otherInc = 0;
-    int lastInc = 0;
     for (int i = 0; i < commandEntered.size(); i++)
     {
         if ((commandEntered[i] == ' ') && (commandEntered[i + 1] != ' '))
         {
-            // test[lastInc] = (char *)commandEntered.substr(otherInc, i - otherInc).c_str();
+            myStringVec.push_back(commandEntered.substr(otherInc, i - otherInc));
             otherInc = i + 1;
-            lastInc++;
         }
     }
     if (commandEntered[commandEntered.size() - 1] != ' ')
     {
-        // char *newTempStr = (char *)commandEntered.substr(otherInc, commandEntered.size() - 1 - otherInc).c_str();
-        // test[lastInc] = newTempStr;
+        myStringVec.push_back(commandEntered.substr(otherInc, commandEntered.size() - otherInc));
     }
-    test[0] = "Help";
-    test[1] = "me";
-    test[2] = "please";
-    test[3] = "guys";
-    cout << "Testing: " << *test+1 << "\n"
-         << flush;
-    argv = test;
+
+    argc = myStringVec.size();
+    argv = (char **)calloc(myStringVec.size(), sizeof(char *));
+
+    for (int i = 0; i < myStringVec.size(); i++)
+    {
+        argv[i] = const_cast<char *>(myStringVec[i].c_str());
+    }
 }
 
 void CommandLine::printCommand()
 {
     cout << "\n"
          << argc << "\n\n";
-    // for (int i = 0; i < 1; i++)
-    // {
-    //     cout << argv[i] << "\n";
-    // }
-
-    cout << *argv[0] << "\n";
-    cout << flush;
+    cout << "Chars2: \n";
+    for (int i = 0; i < argc; i++)
+    {
+        cout << "For " << i << ": " << argv[i] << "|\n"
+             << flush;
+    }
 }

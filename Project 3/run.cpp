@@ -20,4 +20,10 @@ int main()
 {
     CommandLine CMD(cin);
     CMD.printCommand();
+    // cout << CMD.getCommand() << "\n"
+    //      << CMD.getArgVector(3) << "\n"
+    //      << CMD.getArgCount() << "\n"
+    //      << CMD.noAmpersand() << "\n"
+    //      << CMD.getArgVector() << "\n" <<
+    //     flush;
 }
