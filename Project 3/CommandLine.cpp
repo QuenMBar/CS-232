@@ -1,9 +1,6 @@
 /*
- * ThreadProcess.cpp is a class that can create and time processes and threads and print the average times that they took to create.
- *
- *  Created on: Feb 13, 2019
- *      Author: Quentin Barnes
- * 		CS LAB
+ * CommandLine
+ * Quentin
  */
 
 #include "CommandLine.h"
