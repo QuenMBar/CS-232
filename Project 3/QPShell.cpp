@@ -8,17 +8,22 @@ QPShell::QPShell()
 
 void QPShell::run()
 {
+       pid_t Spid = -1;
        while (notExit)
        {
               Prompt myPrompt;
               cout << myPrompt.get() << "$ ";
               CommandLine CMD(cin);
-              // cout << CMD.getCommand() << "\n"
-              //      << CMD.getArgVector(3) << "\n"
-              //      << CMD.getArgCount() << "\n"
-              //      << CMD.noAmpersand() << "\n"
-              //      << CMD.getArgVector() << "\n"
-              //      << flush;
+              // if (!CMD.noAmpersand())
+              // {
+              //        Spid = fork();
+              //        if (Spid == -1)
+              //        {
+              //               perror("fork error");
+              //        }
+              // }
+              // else
+              // {
               string command = CMD.getCommand();
               if (command == "exit")
               {
@@ -26,8 +31,19 @@ void QPShell::run()
               }
               else if (command == "cd")
               {
-                     const char *newDir = CMD.getArgVector(1);
-                     chdir(newDir);
+                     string wholeDir = "";
+                     for (int i = 1; i < CMD.getArgCount(); i++)
+                     {
+                            char *newDir = CMD.getArgVector(i);
+                            if (wholeDir.size() != 0)
+                            {
+                                   wholeDir += " ";
+                            }
+                            wholeDir += newDir;
+                     }
+                     cout << "Moving to dir: " << wholeDir << "\n"
+                          << flush;
+                     chdir(const_cast<char *>(wholeDir.c_str()));
               }
               else if (command == "pwd")
               {
@@ -35,18 +51,29 @@ void QPShell::run()
               }
               else
               {
-                     // Path myPath;
-                     // char *env_args[] = {"PATH=/bin", (char *)0};
-                     // execve(, CMD.getArgVector(), env_args);
                      try
                      {
-                            string wholeCommand = "";
-                            for (int i = 0; i < CMD.getArgCount(); i++)
+                            pid_t pid, w;
+                            string commandArg = "";
+                            char *commandBit = CMD.getArgVector(0);
+                            commandArg = commandArg + "/bin/" + commandBit;
+                            int status;
+
+                            char *envp[] = {NULL};
+                            char **argvCommand = CMD.getArgVector();
+                            argvCommand[0] = const_cast<char *>(commandArg.c_str());
+
+                            if ((pid = fork()) == -1)
                             {
-                                   char *commandBit = CMD.getArgVector(i);
-                                   wholeCommand = wholeCommand + commandBit + " ";
+                                   perror("fork error");
                             }
-                            system(const_cast<char *>(wholeCommand.c_str()));
+                            else if (pid == 0)
+                            {
+                                   execve(argvCommand[0], argvCommand, envp);
+                                   cout << "Couldn't execute command " << command << "\n"
+                                        << flush;
+                            }
+                            w = waitpid(pid, &status, WUNTRACED | WCONTINUED);
                      }
                      catch (exception e)
                      {
@@ -55,4 +82,10 @@ void QPShell::run()
                      }
               }
        }
+       //        if (Spid == 0)
+       //        {
+       //               // kill(getpid(), SIGKILL);
+       //        }
+       // }
+       // }
 }

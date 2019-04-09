@@ -18,10 +18,6 @@ CommandLine::CommandLine(istream &in)
             myStringVec.push_back(commandEntered.substr(otherInc, i - otherInc));
             otherInc = i + 1;
         }
-        if (commandEntered[i] == '&')
-        {
-            noAndFlag = false;
-        }
     }
     if (commandEntered[commandEntered.size() - 1] != ' ')
     {
@@ -29,12 +25,21 @@ CommandLine::CommandLine(istream &in)
     }
 
     argc = myStringVec.size();
-    argv = (char **)calloc(myStringVec.size(), sizeof(char *));
+    argv = (char **)calloc(myStringVec.size() + 1, sizeof(char *) + 1);
 
     for (int i = 0; i < myStringVec.size(); i++)
     {
-        argv[i] = const_cast<char *>(myStringVec[i].c_str());
+        if (myStringVec[i] == "&")
+        {
+            noAndFlag = false;
+            argc--;
+        }
+        else
+        {
+            argv[i] = const_cast<char *>(myStringVec[i].c_str());
+        }
     }
+    argv[argc] = NULL;
 }
 
 CommandLine::CommandLine()
