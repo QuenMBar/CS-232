@@ -19,12 +19,19 @@ class QPShell
 public:
   QPShell();
   void run();
-  void exitShell();
 
 private:
   bool notExit;
   int childArgc;
   char **childArgv;
+
+  Prompt *myPromptPoint;
+
+  void printWorkDir(Prompt myPrompt);
+  void exitShell();
+  void changeDir(CommandLine CMD);
+  void runCommand(CommandLine CMD, string command);
+  void parseCommand(CommandLine CMD, Prompt myPrompt);
 };
 
 #endif /* QPSHELL_H_ */

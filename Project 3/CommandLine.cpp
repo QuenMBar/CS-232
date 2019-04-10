@@ -51,7 +51,10 @@ CommandLine::CommandLine()
 
 CommandLine::~CommandLine()
 {
-    free(argv);
+    if (argv[0] != NULL)
+    {
+        // free(argv);
+    }
 }
 
 char *CommandLine::getCommand() const // return a pointer to the command portion of the command//line (i.e., argv[0]).
