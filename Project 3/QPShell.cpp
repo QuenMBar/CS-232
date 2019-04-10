@@ -24,10 +24,11 @@ void QPShell::run()
               // }
               // else
               // {
+
               string command = CMD.getCommand();
               if (command == "exit")
               {
-                     notExit = false;
+                     exitShell();
               }
               else if (command == "cd")
               {
@@ -88,4 +89,9 @@ void QPShell::run()
        //        }
        // }
        // }
+}
+
+void QPShell::exitShell()
+{
+       notExit = false;
 }

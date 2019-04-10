@@ -19,6 +19,7 @@ class QPShell
 public:
   QPShell();
   void run();
+  void exitShell();
 
 private:
   bool notExit;
