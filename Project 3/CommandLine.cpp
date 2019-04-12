@@ -1,10 +1,17 @@
-/*
- * CommandLine
- * Quentin
+/** CommandLine.cpp is a class that can parse an istream to get a command for a shell to use.  It creates argc and argv
+ * along with noting if the command had an "&" in it.  It then can return those things to the shell if requested.
+ * 
+ * Written by: Quentin Barnes
+ * Date: April 12, 2019
  */
 
 #include "CommandLine.h"
 
+/**Constructor for the CommandLine class.  Uses an istream to create argc and argv
+ * along with noting if the command had an "&" in it. 
+ * receives: A istream
+ * passes: N/a
+ */
 CommandLine::CommandLine(istream &in)
 {
     getline(in, commandEntered);
@@ -42,6 +49,10 @@ CommandLine::CommandLine(istream &in)
     argv[argc] = NULL;
 }
 
+/** Default constructor
+ * receives: N/a
+ * passes: N/a
+ */
 CommandLine::CommandLine()
 {
     noAndFlag = true;
@@ -49,34 +60,55 @@ CommandLine::CommandLine()
     argv = NULL;
 }
 
-CommandLine::~CommandLine()
+/** Frees up the space that calloc() used for argv
+ * receives: N/a
+ * passes: N/a
+ */
+void CommandLine::kill()
 {
-    if (argv[0] != NULL)
-    {
-        // free(argv);
-    }
+    free(argv);
 }
 
-char *CommandLine::getCommand() const // return a pointer to the command portion of the command//line (i.e., argv[0]).
+/** return a pointer to the command portion of the command line
+ * receives: N/a
+ * passes: a char * pointer
+ */
+char *CommandLine::getCommand() const
 {
     return argv[0];
 }
 
-int CommandLine::getArgCount() const // return the number of command//line arguments on the command//line (i.e., argc).
+/** return the number of command line arguments on the command line
+ * receives: N/a
+ * passes: An int
+ */
+int CommandLine::getArgCount() const
 {
     return argc;
 }
 
-char **CommandLine::getArgVector() const // return a pointer to a char* array, each entry of which points to one 'word' of the command//line (i.e., argv).
+/** return a pointer to a char* array, each entry of which points to one 'word' of the command line
+ * receives: N/a
+ * passes: a char ** pointer 
+ */
+char **CommandLine::getArgVector() const
 {
     return argv;
 }
 
-char *CommandLine::getArgVector(int i) const // return a pointer to the ith (zero//relative) command//line 'word' (i.e., argv[i]).
+/** return a pointer to the ith command line 'word'
+ * receives: An int
+ * passes: a char * pointer
+ */
+char *CommandLine::getArgVector(int i) const
 {
     return argv[i];
 }
 
+/** returns true if and only if no ampersand was given on the command line
+ * receives: N/a
+ * passes: A bool
+ */
 bool CommandLine::noAmpersand() const // returns true if and only if no ampersand was given on the command//line
 {
     return noAndFlag;

@@ -1,3 +1,10 @@
+/**QPShell.h is the header file for QPShell.cpp.
+ * This program can be run by g++ -o run run.cpp QPShell.cpp CommandLine.cpp Prompt.cpp Path.cpp
+ * 
+ * Written by: Quentin Barnes
+ * Date: April 12, 2019
+ */
+
 #ifndef QPSHELL_H_
 #define QPSHELL_H_
 

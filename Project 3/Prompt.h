@@ -1,5 +1,8 @@
-// CS-232
-// Paul Jeon
+/** Prompt.h is the header file for Prompt.cpp
+ * 
+ * Written by: Paul Jeon
+ * Date: April 12, 2019
+ */
 
 #ifndef PROMPT_H_
 #define PROMPT_H_

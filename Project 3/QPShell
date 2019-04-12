@@ -1,0 +1,1234 @@
+Script started on Fri 12 Apr 2019 06:24:05 PM EDT
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat [Kqmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat Path.h
+/** Path.h is the header file for Path.cpp
+ * 
+ * Written by: Paul Jeon
+ * Date: April 12, 2019
+ */
+
+#ifndef PATH_H_
+#define PATH_H_
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/types.h>
+
+using namespace std;
+
+class Path
+{
+  public:
+    Path();
+    int find(const string &program) const;
+    string getDirectory(int i) const;
+
+private:
+    vector<char *> dirVec;
+};
+
+#endif
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat Path.cpp
+/**Path.cpp represents the directories in which QPShell searches for the executable
+ * programs.
+ * 
+ * Written by: Paul Jeon
+ * Date: April 12, 2019
+ */
+
+#include "Path.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
+
+using namespace std;
+
+/**
+ * Constructs a Path from PATH environment variable
+ * Receives: N/a
+ * Passes: N/a
+ */
+Path::Path()
+{
+    char *token;
+    // getenv() function searches the environment list to find the
+    // environment variable name, and returns a pointer to the corresponding
+    // value string.
+    char *myPath = getenv("PATH");
+
+    // strtok = split string into tokens
+    // if token is found, returns a pointer to the beginning of the token.
+    token = strtok(myPath, ":");
+    while (token != NULL)
+    {
+        dirVec.push_back(token);
+        token = strtok(NULL, ":");
+    }
+}
+
+/**
+ * Returns the index of the directory containing program.
+ * Receives: string &program
+ * Passes: index of dirVec containing the desired program
+ */
+int Path::find(const string &program) const
+{
+    int index = 0;
+    DIR *curDir;
+    struct dirent *myEnt;
+
+    for (unsigned i = 0; i < dirVec.size(); i++)
+    {
+        if ((curDir = opendir(dirVec[i])) != NULL)
+        {
+            while ((myEnt = readdir(curDir)) != NULL)
+            {
+                if (myEnt->d_name == program)
+                {
+                    index = i;
+                }
+                readdir_r(curDir, myEnt, &myEnt);
+            }
+        }
+        closedir(curDir);
+    }
+    return index;
+}
+
+/**
+ * Returns the name of the directory whose index is i.
+ * Receives: i, an int
+ * Passes: myDir (string path at index i)
+ */
+string Path::getDirectory(int i) const
+{
+    string myDir = dirVec[i];
+    return myDir;
+}
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat Prompt.h
+/** Prompt.h is the header file for Prompt.cpp
+ * 
+ * Written by: Paul Jeon
+ * Date: April 12, 2019
+ */
+
+#ifndef PROMPT_H_
+#define PROMPT_H_
+
+#include <string>
+#include <linux/limits.h>
+
+using namespace std;
+
+class Prompt
+{
+
+public:
+  Prompt();
+  string get() const;
+
+private:
+  string myDir;
+  char myPath[PATH_MAX];
+};
+
+#endif
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat Prompt.cpp
+/** Prompt.cpp represents the command-line prompt.
+ * 
+ * Written by: Paul Jeon
+ * Date: April 12, 2019
+ */
+
+#include "Prompt.h"
+
+#include <unistd.h>
+#include <limits.h>
+
+using namespace std;
+
+
+/** A constructor that builds a Prompt as the full path to the working directory
+ * Receives: N/a
+ * Passes: N/a
+ */
+Prompt::Prompt()
+{
+
+	//  getcwd() function copies an absolute pathname of the current
+	// working directory to the array pointed to by buf, which is of length size.
+	myDir = getcwd(myPath, PATH_MAX + 1);
+}
+
+/** An accessor that returns the current value of the Prompt.
+ * Receives: N/a
+ * Passes: myDir
+ */
+string Prompt::get() const
+{
+	return myDir;
+}
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat CommandLine.h
+/** CommandLine.h is the header file for CommandLine.cpp.  
+ * 
+ * Written by: Quentin Barnes
+ * Date: April 12, 2019
+ */
+
+#ifndef COMMANDLINE_H_
+#define COMMANDLINE_H_
+
+#include <stdio.h>
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
+using namespace std;
+
+class CommandLine
+{
+  public:
+	CommandLine(istream &in); // construct a CommandLine by reading a command//line from in, parsing it, and building instance variables for argc and argv (you may find the calloc() and free() system calls to be of use here).
+	CommandLine();
+	void kill();
+	char *getCommand() const;		 // return a pointer to the command portion of the command//line (i.e., argv[0]).
+	int getArgCount() const;		 // return the number of command//line arguments on the command//line (i.e., argc).
+	char **getArgVector() const;	 // return a pointer to a char* array, each entry of which points to one 'word' of the command//line (i.e., argv).
+	char *getArgVector(int i) const; // return a pointer to the ith (zero//relative) command//line 'word' (i.e., argv[i]).
+	bool noAmpersand() const;		 // returns true if and only if no ampersand was given on the command//line
+	void printCommand();
+
+  private:
+	int argc;
+	char **argv;
+	string commandEntered;
+	bool noAndFlag;
+};
+
+#endif /* COMMANDLINE_H_ */qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat CommandLine.cpp
+/** CommandLine.cpp is a class that can parse an istream to get a command for a shell to use.  It creates argc and argv
+ * along with noting if the command had an "&" in it.  It then can return those things to the shell if requested.
+ * 
+ * Written by: Quentin Barnes
+ * Date: April 12, 2019
+ */
+
+#include "CommandLine.h"
+
+/**Constructor for the CommandLine class.  Uses an istream to create argc and argv
+ * along with noting if the command had an "&" in it. 
+ * receives: A istream
+ * passes: N/a
+ */
+CommandLine::CommandLine(istream &in)
+{
+    getline(in, commandEntered);
+    vector<string> myStringVec;
+    int otherInc = 0;
+    noAndFlag = true;
+    for (int i = 0; i < commandEntered.size(); i++)
+    {
+        if ((commandEntered[i] == ' ') && (commandEntered[i + 1] != ' '))
+        {
+            myStringVec.push_back(commandEntered.substr(otherInc, i - otherInc));
+            otherInc = i + 1;
+        }
+    }
+    if (commandEntered[commandEntered.size() - 1] != ' ')
+    {
+        myStringVec.push_back(commandEntered.substr(otherInc, commandEntered.size() - otherInc));
+    }
+
+    argc = myStringVec.size();
+    argv = (char **)calloc(myStringVec.size() + 1, sizeof(char *) + 1);
+
+    for (int i = 0; i < myStringVec.size(); i++)
+    {
+        if (myStringVec[i] == "&")
+        {
+            noAndFlag = false;
+            argc--;
+        }
+        else
+        {
+            argv[i] = const_cast<char *>(myStringVec[i].c_str());
+        }
+    }
+    argv[argc] = NULL;
+}
+
+/** Default constructor
+ * receives: N/a
+ * passes: N/a
+ */
+CommandLine::CommandLine()
+{
+    noAndFlag = true;
+    argc = 0;
+    argv = NULL;
+}
+
+/** Frees up the space that calloc() used for argv
+ * receives: N/a
+ * passes: N/a
+ */
+void CommandLine::kill()
+{
+    free(argv);
+}
+
+/** return a pointer to the command portion of the command line
+ * receives: N/a
+ * passes: a char * pointer
+ */
+char *CommandLine::getCommand() const
+{
+    return argv[0];
+}
+
+/** return the number of command line arguments on the command line
+ * receives: N/a
+ * passes: An int
+ */
+int CommandLine::getArgCount() const
+{
+    return argc;
+}
+
+/** return a pointer to a char* array, each entry of which points to one 'word' of the command line
+ * receives: N/a
+ * passes: a char ** pointer 
+ */
+char **CommandLine::getArgVector() const
+{
+    return argv;
+}
+
+/** return a pointer to the ith command line 'word'
+ * receives: An int
+ * passes: a char * pointer
+ */
+char *CommandLine::getArgVector(int i) const
+{
+    return argv[i];
+}
+
+/** returns true if and only if no ampersand was given on the command line
+ * receives: N/a
+ * passes: A bool
+ */
+bool CommandLine::noAmpersand() const // returns true if and only if no ampersand was given on the command//line
+{
+    return noAndFlag;
+}qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat QPShell.h
+/**QPShell.h is the header file for QPShell.cpp.
+ * This program can be run by g++ -o run run.cpp QPShell.cpp CommandLine.cpp Prompt.cpp Path.cpp
+ * 
+ * Written by: Quentin Barnes
+ * Date: April 12, 2019
+ */
+
+#ifndef QPSHELL_H_
+#define QPSHELL_H_
+
+#include "CommandLine.h"
+#include "Prompt.h"
+#include "Path.h"
+
+#include <iostream>
+#include <string>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+using namespace std;
+
+class QPShell
+{
+public:
+  QPShell();
+  void run();
+
+private:
+  bool notExit;
+  int childArgc;
+  char **childArgv;
+
+  Prompt *myPromptPoint;
+
+  void printWorkDir(Prompt myPrompt);
+  void exitShell();
+  void changeDir(CommandLine CMD);
+  void runCommand(CommandLine CMD, string command);
+  void parseCommand(CommandLine CMD, Prompt myPrompt);
+};
+
+#endif /* QPSHELL_H_ */qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat QPShell.cpp
+/** QPShell.cpp is a shell that allows the user to execute most of the commands that a regular shell would.  It recognizes cd,
+ * pwd, and exit internaly and uses the function evecve for the other commands.  To do this it uses the command, path, 
+ * and prompt classes.  
+ * 
+ * Written by: Quentin Barnes
+ * Date: April 12, 2019
+ */
+
+#include "QPShell.h"
+
+/**Creates the shell and initilizes its running variable to true
+ * receives: N/a
+ * passes: N/a
+ */
+QPShell::QPShell()
+{
+       notExit = true;
+}
+
+/**
+ * Command is used to start the shell by putting it into a while loop until exit is called by the user
+ * or the shell is terminated some other way.
+ * receives: N/a
+ * passes: N/a
+ */
+void QPShell::run()
+{
+       while (notExit)
+       {
+              Prompt myPrompt;
+              cout << myPrompt.get() << "$ "; // Prints the path of the working directory
+              CommandLine CMD(cin);           // Creates a CommandLine from an istream
+              if (!CMD.noAmpersand())         // Checks to see if there is an "&"
+              {
+                     try
+                     {
+                            pid_t Spid, l;
+                            int status2;
+                            Spid = fork();  // Creates a seperate process for the command to run on
+                            if (Spid == -1) //fork error
+                            {
+                                   perror("fork error");
+                            }
+                            else if (Spid == 0) //Child process
+                            {
+                                   cout << "\n"
+                                        << flush;
+                                   string command = CMD.getCommand(); // Gets given command and turns it into a string
+                                   if (command == "exit")             //If exit, it runs the exit function
+                                   {
+                                          exitShell();
+                                   }
+                                   else if (command == "cd") // IF cd runs the change directory function
+                                   {
+                                          changeDir(CMD);
+                                   }
+                                   else if (command == "pwd") // If pwd, runs printWorkDir function
+                                   {
+                                          printWorkDir(myPrompt);
+                                   }
+                                   else // Else it treats it as a command to be run by execve
+                                   {
+                                          runCommand(CMD, command);
+                                   }
+                                   kill(getpid(), SIGKILL); //kills the process being used to run the command
+                                   CMD.kill();              // Kills the instance of CommandLine, reclaiming memory
+                            }
+                            else // Parent Process
+                            {
+                                   // l = waitpid(Spid, &status2, WUNTRACED | WCONTINUED);        // If we wanted the prompt
+                                   // to still happen after the output
+                            }
+                     }
+                     catch (exception e)
+                     {
+                            cout << "Error with fork \n" // Fork error pt. 2
+                                 << flush;
+                     }
+              }
+              else
+              {
+                     string command = CMD.getCommand(); // Gets given command and turns it into a string
+                     if (command == "exit")             //If exit, it runs the exit function
+                     {
+                            exitShell();
+                     }
+                     else if (command == "cd") // IF cd runs the change directory function
+                     {
+                            changeDir(CMD);
+                     }
+                     else if (command == "pwd") // If pwd, runs printWorkDir function
+                     {
+                            printWorkDir(myPrompt);
+                     }
+                     else // Else it treats it as a command to be run by execve
+                     {
+                            runCommand(CMD, command);
+                     }
+                     CMD.kill(); // Kills the instance of CommandLine, reclaiming memory
+              }
+       }
+}
+
+/**
+ * Sets the value of notExit to false, ending the program
+ * receives: N/a
+ * passes: N/a
+ */
+void QPShell::exitShell()
+{
+       notExit = false;
+}
+
+/**
+ * Prints the prompt that it is given
+ * receives: A Prompt
+ * passes: N/a
+ */
+void QPShell::printWorkDir(Prompt myPrompt)
+{
+       cout << myPrompt.get() << "\n";
+}
+
+/**
+ * Changes the directory given arguments of a command
+ * receives: A CommandLine
+ * passes: N/a
+ */
+void QPShell::changeDir(CommandLine CMD)
+{
+       string wholeDir = "";
+       for (int i = 1; i < CMD.getArgCount(); i++)
+       {
+              char *newDir = CMD.getArgVector(i);
+              if (wholeDir.size() != 0)
+              {
+                     wholeDir += " ";
+              }
+              wholeDir += newDir;
+       }
+       chdir(const_cast<char *>(wholeDir.c_str()));
+}
+
+/**
+ * Tries to run the command specified by the CommandLine.  If it cannot be run, prints that the command doesnt exist
+ * receives: A CommandLine and a string
+ * passes: N/a
+ */
+void QPShell::runCommand(CommandLine CMD, string command)
+{
+       try
+       {
+              pid_t pid, w;
+              string commandArg = "";
+              char *commandBit = CMD.getArgVector(0);         //gets the command from the CommandLine
+              commandArg = commandArg + "/bin/" + commandBit; // turns it into a readable command for exevce
+              int status;
+
+              char *envp[] = {NULL}; // Enviormental variables
+              char **argvCommand = CMD.getArgVector();
+              argvCommand[0] = const_cast<char *>(commandArg.c_str()); // Turns the command at the begining of argv into something execve can read
+
+              if ((pid = fork()) == -1) // Fork error
+              {
+                     perror("fork error");
+              }
+              else if (pid == 0) // Child process
+              {
+                     execve(argvCommand[0], argvCommand, envp); // runs the command
+                     cout << "Couldn't execute command " << command << "\n"
+                          << flush;
+              }
+              w = waitpid(pid, &status, WUNTRACED | WCONTINUED); // waits for the child process to finish executing the command
+              if (pid == 0)                                      // Child process again
+              {
+                     kill(getpid(), SIGKILL); // Kills the child process
+              }
+       }
+       catch (exception e) // if execve fails, tells the user it couldnt execute the command
+       {
+              cout << "Couldn't execute command " << command << "\n"
+                   << flush;
+       }
+}
+
+// Gave errors if used because variables were being deleated before they could be used
+//
+// void QPShell::parseCommand(CommandLine CMD, Prompt myPrompt)
+// {
+//        string command = CMD.getCommand();
+//        if (command == "exit")
+//        {
+//               exitShell();
+//        }
+//        else if (command == "cd")
+//        {
+//               changeDir(CMD);
+//        }
+//        else if (command == "pwd")
+//        {
+//               printWorkDir(myPrompt);
+//        }
+//        else
+//        {
+//               runCommand(CMD, command);
+//        }
+// }qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ cat run.cpp
+/**Run.cpp is the executable file that calls the QPShell to init it, and then gives it the command to run.
+ * This program can be run by g++ -o run run.cpp QPShell.cpp CommandLine.cpp Prompt.cpp Path.cpp
+ * 
+ * Date: April 12, 2019
+ */
+
+#include "QPShell.h"
+using namespace std;
+
+int main()
+{
+    QPShell myShell;
+    myShell.run();
+}
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ ca  g++ -o run run.cpp QPShell.cpp Com mandLine.cpp Prompt.cpp Path.cpp
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ ./run
+/home/qmb2/Desktop/GitStuff/cs232Project3$ ls
+CommandLine.cpp  Path.cpp  Prompt.cpp  QPShell	    QPShell.h  run.cpp
+CommandLine.h	 Path.h    Prompt.h    QPShell.cpp  run
+/home/qmb2/Desktop/GitStuff/cs232Project3$ cd ..
+/home/qmb2/Desktop/GitStuff$ cd cs232Project3
+/home/qmb2/Desktop/GitStuff/cs232Project3$ pwd
+/home/qmb2/Desktop/GitStuff/cs232Project3
+/home/qmb2/Desktop/GitStuff/cs232Project3$ ls -a
+.     .gitignore       CommandLine.h  Prompt.cpp  QPShell.cpp  run.cpp
+..    .vscode	       Path.cpp       Prompt.h	  QPShell.h
+.git  CommandLine.cpp  Path.h	      QPShell	  run
+/home/qmb2/Desktop/GitStuff/cs232Project3$ ls -a &
+/home/qmb2/Desktop/GitStuff/cs232Project3$ 
+.     .gitignore       CommandLine.h  Prompt.cpp  QPShell.cpp  run.cpp
+..    .vscode	       Path.cpp       Prompt.h	  QPShell.h
+.git  CommandLine.cpp  Path.h	      QPShell	  run
+ls -l /home/cs/
+total 100
+drwxrwsr-x 3 admin facstf         4096 Jan 24 07:30 101
+drwxrwsr-x 5 admin facstf         4096 Jan 23 09:56 106
+drwxrwsr-x 3 admin facstf         4096 Jan 23 10:47 108
+drwxrwsr-x 5 admin facstf         4096 Jan 23 10:47 112
+drwxrwsr-x 2 admin facstf         4096 Jan 23 09:57 202
+drwxrwsr-x 2 admin facstf         4096 Jan 23 09:59 212
+drwxrwsr-x 4 admin facstf         4096 Jan 23 10:48 214
+drwxrwsr-x 5 admin facstf         4096 Apr  2 11:44 232
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:24 262
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:24 300
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:25 312
+drwxrwsr-x 4 admin facstf         4096 Jan 23 10:29 332
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:29 336
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:29 337
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:44 342
+drwxrwsr-x 3 admin facstf         4096 Jan 23 10:48 344
+drwxrwsr-x 3 admin facstf         4096 Jan 23 10:48 352
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:45 364
+drwxrwsr-x 4 admin facstf         4096 Jan 23 10:46 374
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:46 384
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:46 390
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:46 394
+drwxrwsr-x 2 admin facstf         4096 Jan 23 10:46 398
+drwxrwsr-x 3 admin seniorprojects 4096 May 17  2018 seniorprojects
+drwxrwsr-x 3 admin facstf         4096 Jan 23 10:47 w61
+/home/qmb2/Desktop/GitStuff/cs232Project3$ ps -ax &
+/home/qmb2/Desktop/GitStuff/cs232Project3$ 
+  PID TTY      STAT   TIME COMMAND
+    1 ?        Ss     0:01 /sbin/init
+    2 ?        S      0:00 [kthreadd]
+    4 ?        I<     0:00 [kworker/0:0H]
+    6 ?        I<     0:00 [mm_percpu_wq]
+    7 ?        S      0:00 [ksoftirqd/0]
+    8 ?        I      0:07 [rcu_sched]
+    9 ?        I      0:00 [rcu_bh]
+   10 ?        S      0:00 [migration/0]
+   11 ?        S      0:00 [watchdog/0]
+   12 ?        S      0:00 [cpuhp/0]
+   13 ?        S      0:00 [cpuhp/1]
+   14 ?        S      0:00 [watchdog/1]
+   15 ?        S      0:00 [migration/1]
+   16 ?        S      0:00 [ksoftirqd/1]
+   18 ?        I<     0:00 [kworker/1:0H]
+   19 ?        S      0:00 [cpuhp/2]
+   20 ?        S      0:00 [watchdog/2]
+   21 ?        S      0:00 [migration/2]
+   22 ?        S      0:00 [ksoftirqd/2]
+   24 ?        I<     0:00 [kworker/2:0H]
+   25 ?        S      0:00 [cpuhp/3]
+   26 ?        S      0:00 [watchdog/3]
+   27 ?        S      0:00 [migration/3]
+   28 ?        S      0:00 [ksoftirqd/3]
+   30 ?        I<     0:00 [kworker/3:0H]
+   31 ?        S      0:00 [cpuhp/4]
+   32 ?        S      0:00 [watchdog/4]
+   33 ?        S      0:00 [migration/4]
+   34 ?        S      0:00 [ksoftirqd/4]
+   36 ?        I<     0:00 [kworker/4:0H]
+   37 ?        S      0:00 [cpuhp/5]
+   38 ?        S      0:00 [watchdog/5]
+   39 ?        S      0:00 [migration/5]
+   40 ?        S      0:00 [ksoftirqd/5]
+   42 ?        I<     0:00 [kworker/5:0H]
+   43 ?        S      0:00 [cpuhp/6]
+   44 ?        S      0:00 [watchdog/6]
+   45 ?        S      0:00 [migration/6]
+   46 ?        S      0:00 [ksoftirqd/6]
+   48 ?        I<     0:00 [kworker/6:0H]
+   49 ?        S      0:00 [cpuhp/7]
+   50 ?        S      0:00 [watchdog/7]
+   51 ?        S      0:00 [migration/7]
+   52 ?        S      0:00 [ksoftirqd/7]
+   54 ?        I<     0:00 [kworker/7:0H]
+   55 ?        S      0:00 [kdevtmpfs]
+   56 ?        I<     0:00 [netns]
+   57 ?        S      0:00 [rcu_tasks_kthre]
+   58 ?        S      0:00 [kauditd]
+   62 ?        S      0:00 [khungtaskd]
+   63 ?        S      0:00 [oom_reaper]
+   64 ?        I<     0:00 [writeback]
+   65 ?        S      0:00 [kcompactd0]
+   66 ?        SN     0:00 [ksmd]
+   67 ?        SN     0:00 [khugepaged]
+   68 ?        I<     0:00 [crypto]
+   69 ?        I<     0:00 [kintegrityd]
+   70 ?        I<     0:00 [kblockd]
+   74 ?        I<     0:00 [ata_sff]
+   75 ?        I<     0:00 [md]
+   76 ?        I<     0:00 [edac-poller]
+   77 ?        I<     0:00 [devfreq_wq]
+   78 ?        I<     0:00 [watchdogd]
+   82 ?        S      0:00 [kswapd0]
+   83 ?        I<     0:00 [kworker/u17:0]
+   84 ?        S      0:00 [ecryptfs-kthrea]
+  126 ?        I<     0:00 [kthrotld]
+  127 ?        I<     0:00 [acpi_thermal_pm]
+  131 ?        I<     0:00 [ipv6_addrconf]
+  141 ?        I<     0:00 [kstrp]
+  158 ?        I<     0:00 [charger_manager]
+  220 ?        S      0:00 [scsi_eh_0]
+  221 ?        I<     0:00 [scsi_tmf_0]
+  222 ?        S      0:00 [scsi_eh_1]
+  223 ?        I<     0:00 [scsi_tmf_1]
+  224 ?        S      0:00 [scsi_eh_2]
+  225 ?        I<     0:00 [scsi_tmf_2]
+  226 ?        S      0:00 [scsi_eh_3]
+  227 ?        I<     0:00 [scsi_tmf_3]
+  228 ?        S      0:00 [scsi_eh_4]
+  229 ?        I<     0:00 [scsi_tmf_4]
+  230 ?        S      0:00 [scsi_eh_5]
+  231 ?        I<     0:00 [scsi_tmf_5]
+  240 ?        S      0:00 [nvidia-modeset]
+  243 ?        I<     0:00 [kworker/6:1H]
+  266 ?        S      0:00 [jbd2/sda5-8]
+  267 ?        I<     0:00 [ext4-rsv-conver]
+  317 ?        Ss     0:00 /lib/systemd/systemd-journald
+  332 ?        I<     0:00 [rpciod]
+  333 ?        I<     0:00 [xprtiod]
+  350 ?        I<     0:00 [kworker/3:1H]
+  351 ?        I<     0:00 [kworker/2:1H]
+  367 ?        S<     0:00 [loop0]
+  370 ?        S<     0:00 [loop1]
+  382 ?        S<     0:00 [loop2]
+  383 ?        S<     0:00 [loop3]
+  384 ?        Ss     0:00 /lib/systemd/systemd-udevd
+  386 ?        S<     0:00 [loop4]
+  390 ?        I<     0:00 [kworker/1:1H]
+  400 ?        I<     0:53 [kworker/7:1H]
+  401 ?        I<     0:00 [kworker/5:1H]
+  526 ?        Ss     0:00 /usr/sbin/rpc.gssd
+  604 ?        S      0:00 [irq/28-mei_me]
+  629 ?        I<     0:00 [kworker/4:1H]
+  667 ?        S      0:00 [UVM global queu]
+  674 ?        S      0:00 [UVM Tools Event]
+  714 ?        I<     0:00 [kworker/0:1H]
+  927 ?        Ss     0:01 /usr/bin/dbus-daemon --system --address=systemd: --no
+  928 ?        Ssl    0:00 /usr/sbin/rsyslogd -n
+  933 ?        Ss     0:01 /usr/sbin/sssd -i -f
+  952 ?        Ss     0:00 avahi-daemon: running [gold34.local]
+  954 ?        Ss     0:00 /usr/sbin/cupsd -l
+  956 ?        Ss     0:00 /usr/sbin/atd -f
+  958 ?        Ssl    0:00 /usr/sbin/NetworkManager --no-daemon
+  962 ?        Ss     0:00 /usr/sbin/cron -f
+  963 ?        Ss     0:01 /usr/sbin/acpid
+  970 ?        Ss     0:00 /usr/sbin/inetd -i
+  973 ?        Ssl    0:03 /usr/lib/snapd/snapd
+  979 ?        S      0:00 avahi-daemon: chroot helper
+  998 ?        Ssl    0:00 /usr/sbin/cups-browsed
+ 1009 ?        Ssl    0:00 /usr/lib/colord/colord
+ 1015 ?        S      0:11 /usr/lib/x86_64-linux-gnu/sssd/sssd_be --domain cs.ca
+ 1028 ?        S      0:00 /usr/lib/postgresql/9.5/bin/postgres -D /var/lib/post
+ 1035 ?        I<     0:00 [iprt-VBoxWQueue]
+ 1038 ?        S      0:00 [iprt-VBoxTscThr]
+ 1045 ?        Ssl    0:00 /usr/lib/policykit-1/polkitd --no-debug
+ 1055 ?        S      0:02 /usr/lib/x86_64-linux-gnu/sssd/sssd_nss --uid 0 --gid
+ 1056 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_sudo --uid 0 --gi
+ 1057 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_pam --uid 0 --gid
+ 1058 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_ssh --uid 0 --gid
+ 1059 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_pac --uid 0 --gid
+ 1078 ?        Ss     0:00 /lib/systemd/systemd-logind
+ 1080 ?        Ssl    0:01 /usr/lib/accountsservice/accounts-daemon
+ 1114 ?        Ss     0:00 postgres: checkpointer process   
+ 1115 ?        Ss     0:00 postgres: writer process   
+ 1116 ?        Ss     0:00 postgres: wal writer process   
+ 1117 ?        Ss     0:00 postgres: autovacuum launcher process   
+ 1118 ?        Ss     0:00 postgres: stats collector process   
+ 1306 ?        Ss     0:00 /sbin/dhclient -1 -v -pf /run/dhclient.enp0s25.pid -l
+ 1414 ?        Ss     0:00 /usr/games/bzfs -advertise NONE
+ 1415 ?        Ss     0:00 /usr/sbin/certmonger -S -p /var/run/certmonger.pid -n
+ 1416 ?        Ss     0:00 /usr/sbin/oddjobd -n -p /var/run/oddjobd.pid -t 300
+ 1417 ?        Ss     0:01 /usr/bin/perl /usr/local/scripts/computerinfodaemon.p
+ 1418 ?        Ssl    0:46 /usr/bin/mongod --config /etc/mongod.conf
+ 1420 ?        Ssl    0:00 /usr/bin/whoopsie -f
+ 1430 ?        Ss     0:00 /usr/sbin/sshd -D
+ 1450 ?        I<     0:00 [nfsiod]
+ 1479 ?        S      0:00 [NFSv4 callback]
+ 1621 ?        S<L    0:00 /usr/bin/atop -a -w /var/log/atop/atop_20190412 600
+ 1641 ?        SLsl   0:00 /usr/sbin/lightdm
+ 1775 ?        Ss     0:00 /usr/lib/postfix/sbin/master
+ 1777 ?        S      0:00 qmgr -l -t unix -u
+ 1870 ?        Ssl    0:00 /usr/bin/ruby /usr/bin/puppet agent
+ 1878 tty1     Ss+    0:00 /sbin/agetty --noclear tty1 linux
+ 1945 ?        SNsl   0:00 /usr/lib/rtkit/rtkit-daemon
+ 2392 ?        Ss     0:00 /usr/sbin/ntpd -p /var/run/ntpd.pid -c /var/lib/ntp/n
+ 3914 ?        Ssl    0:00 /usr/lib/upower/upowerd
+ 4075 ?        Ssl    0:00 /usr/lib/udisks2/udisksd --no-debug
+10717 ?        I      0:05 [kworker/5:0]
+16114 ?        S      0:00 /usr/lib/cups/notifier/dbus dbus://
+16338 tty7     Ss+    1:59 /usr/lib/xorg/Xorg -core :0 -seat seat0 -auth /var/ru
+16342 ?        Ss     0:00 /usr/bin/nvidia-persistenced --user root --no-persist
+16343 ?        S      0:16 [irq/30-nvidia]
+16344 ?        S      0:00 [nvidia]
+19620 ?        I      0:06 [kworker/0:0]
+21208 ?        I      0:00 [kworker/2:1]
+22805 ?        I      0:00 [kworker/u16:0]
+22934 ?        Sl     0:00 lightdm --session-child 13 20
+22942 ?        I      0:00 [kworker/u16:4]
+22945 ?        Ss     0:00 /lib/systemd/systemd --user
+22947 ?        S      0:00 (sd-pam)
+22951 ?        Ss     0:00 /sbin/upstart --user
+23019 ?        S      0:00 upstart-udev-bridge --daemon --user
+23021 ?        Ss     0:00 ssh-agent -s
+23026 ?        Ss     0:00 dbus-daemon --fork --session --address=unix:abstract=
+23064 ?        S      0:00 upstart-dbus-bridge --daemon --system --user --bus-na
+23066 ?        S      0:00 upstart-dbus-bridge --daemon --session --user --bus-n
+23068 ?        S      0:00 upstart-file-bridge --daemon --user
+23073 ?        Ss     0:00 gpg-agent --homedir /home/qmb2/.gnupg --use-standard-
+23082 ?        Ss     0:00 /bin/sh /etc/xdg/xfce4/xinitrc -- /etc/X11/xinit/xser
+23093 ?        Sl     0:00 xfce4-session
+23097 ?        S      0:00 /usr/lib/x86_64-linux-gnu/xfce4/xfconf/xfconfd
+23104 ?        S      0:05 xfwm4 --replace
+23108 ?        Sl     0:01 xfce4-panel
+23110 ?        Sl     0:05 Thunar --daemon
+23112 ?        Sl     0:01 xfdesktop
+23113 ?        S      0:00 xscreensaver -no-splash
+23115 ?        Sl     0:00 update-notifier
+23116 ?        Sl     0:00 /usr/bin/python3 /usr/bin/blueman-applet
+23117 ?        Ssl    0:00 xfsettingsd
+23119 ?        Sl     0:00 nm-applet
+23122 ?        Sl     0:00 /usr/lib/policykit-1-gnome/polkit-gnome-authenticatio
+23130 ?        Sl     0:00 /usr/bin/python3 /usr/share/system-config-printer/app
+23131 ?        Sl     0:00 light-locker
+23138 ?        Ssl    0:00 xfce4-power-manager
+23143 ?        Ssl    0:00 xfce4-volumed
+23152 ?        Sl     0:00 /usr/lib/dconf/dconf-service
+23160 ?        S<l    0:00 /usr/bin/pulseaudio --start --log-target=syslog
+23164 ?        Sl     0:00 /usr/lib/at-spi2-core/at-spi-bus-launcher
+23169 ?        S      0:00 /usr/bin/dbus-daemon --config-file=/etc/at-spi2/acces
+23175 ?        Sl     0:00 /usr/lib/gvfs/gvfsd
+23176 ?        Sl     0:00 /usr/lib/x86_64-linux-gnu/xfce4/panel/wrapper-1.0 /us
+23182 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-fuse /run/user/51018/gvfs -f -o b
+23197 ?        Sl     0:00 /usr/lib/x86_64-linux-gnu/xfce4/panel/wrapper-2.0 /us
+23203 ?        Sl     0:00 /usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-s
+23223 ?        S      0:00 upstart --user --startup-event indicator-services-sta
+23225 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-messages/indicato
+23226 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-bluetooth/indicat
+23227 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-power/indicator-p
+23228 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-datetime/indicato
+23229 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-keyboard/indicato
+23230 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-sound/indicator-s
+23231 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-session/indicator
+23234 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-application/indic
+23325 ?        Sl     0:00 /usr/lib/gvfs/gvfs-udisks2-volume-monitor
+23330 ?        Sl     0:00 /usr/lib/gvfs/gvfs-gphoto2-volume-monitor
+23335 ?        Sl     0:00 /usr/lib/gvfs/gvfs-goa-volume-monitor
+23340 ?        Sl     0:00 /usr/lib/gvfs/gvfs-afc-volume-monitor
+23346 ?        Sl     0:00 /usr/lib/gvfs/gvfs-mtp-volume-monitor
+23351 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-metadata
+23355 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-trash --spawner :1.26 /org/gtk/gv
+23418 ?        Sl     1:12 /usr/share/code/code --unity-launch
+23420 ?        S      0:00 /usr/share/code/code --type=zygote --no-sandbox
+23452 ?        Sl     1:27 /usr/share/code/code --type=gpu-process --no-sandbox 
+23541 ?        Sl     0:03 /usr/share/code/code --type=renderer --no-sandbox --s
+23640 ?        S      0:00 /usr/lib/bluetooth/obexd
+23705 ?        Sl     0:22 /opt/google/chrome/chrome
+23710 ?        S      0:00 cat
+23711 ?        S      0:00 cat
+23714 ?        S      0:00 /opt/google/chrome/chrome --type=zygote
+23715 ?        S      0:00 /opt/google/chrome/nacl_helper
+23718 ?        S      0:00 /opt/google/chrome/chrome --type=zygote
+23743 ?        Sl     0:12 /opt/google/chrome/chrome --type=gpu-process --field-
+23747 ?        Sl     0:02 /opt/google/chrome/chrome --type=utility --field-tria
+23765 ?        S      0:00 /opt/google/chrome/chrome --type=-broker
+23796 ?        Sl     0:04 /opt/google/chrome/chrome --type=renderer --field-tri
+23812 ?        Sl     0:05 /opt/google/chrome/chrome --type=renderer --field-tri
+23813 ?        Sl     0:00 /opt/google/chrome/chrome --type=renderer --field-tri
+23824 ?        Sl     0:01 /opt/google/chrome/chrome --type=renderer --field-tri
+23833 ?        Sl     0:01 /opt/google/chrome/chrome --type=renderer --field-tri
+24233 ?        Ssl    0:02 /opt/sublime_text/sublime_text /home/qmb2/Desktop/Git
+24244 ?        Sl     0:00 /opt/sublime_text/plugin_host 24233 --auto-shell-env
+24537 ?        I      0:02 [kworker/6:1]
+24621 ?        I      0:00 [kworker/4:3]
+24627 ?        I      0:05 [kworker/4:4]
+26979 ?        Sl     0:01 /usr/bin/xfce4-terminal
+26983 ?        S      0:00 gnome-pty-helper
+27344 ?        I      0:03 [kworker/1:1]
+27964 ?        I      0:00 [kworker/u16:1]
+28176 ?        Sl     0:07 /opt/google/chrome/chrome --type=renderer --field-tri
+28191 ?        Sl     0:00 /opt/google/chrome/chrome --type=renderer --field-tri
+28214 ?        I      0:01 [kworker/0:2]
+28226 ?        I      0:01 [kworker/2:2]
+28303 ?        I      0:00 [kworker/7:0]
+28347 ?        I      0:00 [kworker/3:1]
+28448 ?        I      0:00 [kworker/5:1]
+28482 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-network --spawner :1.26 /org/gtk/
+28491 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-smb-browse --spawner :1.26 /org/g
+28499 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-dnssd --spawner :1.26 /org/gtk/gv
+28508 ?        Sl     0:41 /usr/share/code/code --type=renderer --no-sandbox --s
+28542 ?        Sl     0:06 /usr/share/code/code /usr/share/code/resources/app/ou
+28543 ?        Sl     0:03 /usr/share/code/code --nolazy --inspect=39597 /usr/sh
+28579 ?        Sl     0:00 /usr/share/code/code /usr/share/code/resources/app/ou
+28619 ?        Sl     0:19 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+28668 ?        I      0:00 [kworker/1:2]
+28671 ?        I      0:00 [kworker/6:0]
+28815 pts/13   Ss     0:00 bash
+28869 ?        I      0:01 [kworker/7:1]
+29628 ?        S      0:00 pickup -l -t unix -u -c
+30119 ?        I      0:00 [kworker/3:2]
+30164 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30252 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30293 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30311 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30516 ?        I      0:00 [kworker/u16:2]
+30704 pts/13   S+     0:00 script QPShell
+30705 pts/5    Ss     0:00 bash -i
+30711 ?        I      0:02 [kworker/7:2]
+30760 ?        I      0:00 [kworker/2:0]
+30806 pts/5    S+     0:00 ./run
+30819 ?        I      0:00 [kworker/4:0]
+30825 pts/5    Z+     0:00 [run] <defunct>
+30839 pts/5    S+     0:00 ./run
+30840 pts/5    R+     0:00 /bin/ps -ax
+cd ..
+/home/qmb2/Desktop/GitStuff$ cd CS-232/Project 3
+/home/qmb2/Desktop/GitStuff/CS-232/Project 3$ ps -ax
+  PID TTY      STAT   TIME COMMAND
+    1 ?        Ss     0:01 /sbin/init
+    2 ?        S      0:00 [kthreadd]
+    4 ?        I<     0:00 [kworker/0:0H]
+    6 ?        I<     0:00 [mm_percpu_wq]
+    7 ?        S      0:00 [ksoftirqd/0]
+    8 ?        I      0:07 [rcu_sched]
+    9 ?        I      0:00 [rcu_bh]
+   10 ?        S      0:00 [migration/0]
+   11 ?        S      0:00 [watchdog/0]
+   12 ?        S      0:00 [cpuhp/0]
+   13 ?        S      0:00 [cpuhp/1]
+   14 ?        S      0:00 [watchdog/1]
+   15 ?        S      0:00 [migration/1]
+   16 ?        S      0:00 [ksoftirqd/1]
+   18 ?        I<     0:00 [kworker/1:0H]
+   19 ?        S      0:00 [cpuhp/2]
+   20 ?        S      0:00 [watchdog/2]
+   21 ?        S      0:00 [migration/2]
+   22 ?        S      0:00 [ksoftirqd/2]
+   24 ?        I<     0:00 [kworker/2:0H]
+   25 ?        S      0:00 [cpuhp/3]
+   26 ?        S      0:00 [watchdog/3]
+   27 ?        S      0:00 [migration/3]
+   28 ?        S      0:00 [ksoftirqd/3]
+   30 ?        I<     0:00 [kworker/3:0H]
+   31 ?        S      0:00 [cpuhp/4]
+   32 ?        S      0:00 [watchdog/4]
+   33 ?        S      0:00 [migration/4]
+   34 ?        S      0:00 [ksoftirqd/4]
+   36 ?        I<     0:00 [kworker/4:0H]
+   37 ?        S      0:00 [cpuhp/5]
+   38 ?        S      0:00 [watchdog/5]
+   39 ?        S      0:00 [migration/5]
+   40 ?        S      0:00 [ksoftirqd/5]
+   42 ?        I<     0:00 [kworker/5:0H]
+   43 ?        S      0:00 [cpuhp/6]
+   44 ?        S      0:00 [watchdog/6]
+   45 ?        S      0:00 [migration/6]
+   46 ?        S      0:00 [ksoftirqd/6]
+   48 ?        I<     0:00 [kworker/6:0H]
+   49 ?        S      0:00 [cpuhp/7]
+   50 ?        S      0:00 [watchdog/7]
+   51 ?        S      0:00 [migration/7]
+   52 ?        S      0:00 [ksoftirqd/7]
+   54 ?        I<     0:00 [kworker/7:0H]
+   55 ?        S      0:00 [kdevtmpfs]
+   56 ?        I<     0:00 [netns]
+   57 ?        S      0:00 [rcu_tasks_kthre]
+   58 ?        S      0:00 [kauditd]
+   62 ?        S      0:00 [khungtaskd]
+   63 ?        S      0:00 [oom_reaper]
+   64 ?        I<     0:00 [writeback]
+   65 ?        S      0:00 [kcompactd0]
+   66 ?        SN     0:00 [ksmd]
+   67 ?        SN     0:00 [khugepaged]
+   68 ?        I<     0:00 [crypto]
+   69 ?        I<     0:00 [kintegrityd]
+   70 ?        I<     0:00 [kblockd]
+   74 ?        I<     0:00 [ata_sff]
+   75 ?        I<     0:00 [md]
+   76 ?        I<     0:00 [edac-poller]
+   77 ?        I<     0:00 [devfreq_wq]
+   78 ?        I<     0:00 [watchdogd]
+   82 ?        S      0:00 [kswapd0]
+   83 ?        I<     0:00 [kworker/u17:0]
+   84 ?        S      0:00 [ecryptfs-kthrea]
+  126 ?        I<     0:00 [kthrotld]
+  127 ?        I<     0:00 [acpi_thermal_pm]
+  131 ?        I<     0:00 [ipv6_addrconf]
+  141 ?        I<     0:00 [kstrp]
+  158 ?        I<     0:00 [charger_manager]
+  220 ?        S      0:00 [scsi_eh_0]
+  221 ?        I<     0:00 [scsi_tmf_0]
+  222 ?        S      0:00 [scsi_eh_1]
+  223 ?        I<     0:00 [scsi_tmf_1]
+  224 ?        S      0:00 [scsi_eh_2]
+  225 ?        I<     0:00 [scsi_tmf_2]
+  226 ?        S      0:00 [scsi_eh_3]
+  227 ?        I<     0:00 [scsi_tmf_3]
+  228 ?        S      0:00 [scsi_eh_4]
+  229 ?        I<     0:00 [scsi_tmf_4]
+  230 ?        S      0:00 [scsi_eh_5]
+  231 ?        I<     0:00 [scsi_tmf_5]
+  240 ?        S      0:00 [nvidia-modeset]
+  243 ?        I<     0:00 [kworker/6:1H]
+  266 ?        S      0:00 [jbd2/sda5-8]
+  267 ?        I<     0:00 [ext4-rsv-conver]
+  317 ?        Ss     0:00 /lib/systemd/systemd-journald
+  332 ?        I<     0:00 [rpciod]
+  333 ?        I<     0:00 [xprtiod]
+  350 ?        I<     0:00 [kworker/3:1H]
+  351 ?        I<     0:00 [kworker/2:1H]
+  367 ?        S<     0:00 [loop0]
+  370 ?        S<     0:00 [loop1]
+  382 ?        S<     0:00 [loop2]
+  383 ?        S<     0:00 [loop3]
+  384 ?        Ss     0:00 /lib/systemd/systemd-udevd
+  386 ?        S<     0:00 [loop4]
+  390 ?        I<     0:00 [kworker/1:1H]
+  400 ?        I<     0:54 [kworker/7:1H]
+  401 ?        I<     0:00 [kworker/5:1H]
+  526 ?        Ss     0:00 /usr/sbin/rpc.gssd
+  604 ?        S      0:00 [irq/28-mei_me]
+  629 ?        I<     0:00 [kworker/4:1H]
+  667 ?        S      0:00 [UVM global queu]
+  674 ?        S      0:00 [UVM Tools Event]
+  714 ?        I<     0:00 [kworker/0:1H]
+  927 ?        Ss     0:01 /usr/bin/dbus-daemon --system --address=systemd: --no
+  928 ?        Ssl    0:00 /usr/sbin/rsyslogd -n
+  933 ?        Ss     0:01 /usr/sbin/sssd -i -f
+  952 ?        Ss     0:00 avahi-daemon: running [gold34.local]
+  954 ?        Ss     0:00 /usr/sbin/cupsd -l
+  956 ?        Ss     0:00 /usr/sbin/atd -f
+  958 ?        Ssl    0:00 /usr/sbin/NetworkManager --no-daemon
+  962 ?        Ss     0:00 /usr/sbin/cron -f
+  963 ?        Ss     0:01 /usr/sbin/acpid
+  970 ?        Ss     0:00 /usr/sbin/inetd -i
+  973 ?        Ssl    0:03 /usr/lib/snapd/snapd
+  979 ?        S      0:00 avahi-daemon: chroot helper
+  998 ?        Ssl    0:00 /usr/sbin/cups-browsed
+ 1009 ?        Ssl    0:00 /usr/lib/colord/colord
+ 1015 ?        S      0:11 /usr/lib/x86_64-linux-gnu/sssd/sssd_be --domain cs.ca
+ 1028 ?        S      0:00 /usr/lib/postgresql/9.5/bin/postgres -D /var/lib/post
+ 1035 ?        I<     0:00 [iprt-VBoxWQueue]
+ 1038 ?        S      0:00 [iprt-VBoxTscThr]
+ 1045 ?        Ssl    0:00 /usr/lib/policykit-1/polkitd --no-debug
+ 1055 ?        S      0:02 /usr/lib/x86_64-linux-gnu/sssd/sssd_nss --uid 0 --gid
+ 1056 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_sudo --uid 0 --gi
+ 1057 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_pam --uid 0 --gid
+ 1058 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_ssh --uid 0 --gid
+ 1059 ?        S      0:00 /usr/lib/x86_64-linux-gnu/sssd/sssd_pac --uid 0 --gid
+ 1078 ?        Ss     0:00 /lib/systemd/systemd-logind
+ 1080 ?        Ssl    0:01 /usr/lib/accountsservice/accounts-daemon
+ 1114 ?        Ss     0:00 postgres: checkpointer process   
+ 1115 ?        Ss     0:00 postgres: writer process   
+ 1116 ?        Ss     0:00 postgres: wal writer process   
+ 1117 ?        Ss     0:00 postgres: autovacuum launcher process   
+ 1118 ?        Ss     0:00 postgres: stats collector process   
+ 1306 ?        Ss     0:00 /sbin/dhclient -1 -v -pf /run/dhclient.enp0s25.pid -l
+ 1414 ?        Ss     0:00 /usr/games/bzfs -advertise NONE
+ 1415 ?        Ss     0:00 /usr/sbin/certmonger -S -p /var/run/certmonger.pid -n
+ 1416 ?        Ss     0:00 /usr/sbin/oddjobd -n -p /var/run/oddjobd.pid -t 300
+ 1417 ?        Ss     0:01 /usr/bin/perl /usr/local/scripts/computerinfodaemon.p
+ 1418 ?        Ssl    0:46 /usr/bin/mongod --config /etc/mongod.conf
+ 1420 ?        Ssl    0:00 /usr/bin/whoopsie -f
+ 1430 ?        Ss     0:00 /usr/sbin/sshd -D
+ 1450 ?        I<     0:00 [nfsiod]
+ 1479 ?        S      0:00 [NFSv4 callback]
+ 1621 ?        S<L    0:00 /usr/bin/atop -a -w /var/log/atop/atop_20190412 600
+ 1641 ?        SLsl   0:00 /usr/sbin/lightdm
+ 1775 ?        Ss     0:00 /usr/lib/postfix/sbin/master
+ 1777 ?        S      0:00 qmgr -l -t unix -u
+ 1870 ?        Ssl    0:00 /usr/bin/ruby /usr/bin/puppet agent
+ 1878 tty1     Ss+    0:00 /sbin/agetty --noclear tty1 linux
+ 1945 ?        SNsl   0:00 /usr/lib/rtkit/rtkit-daemon
+ 2392 ?        Ss     0:00 /usr/sbin/ntpd -p /var/run/ntpd.pid -c /var/lib/ntp/n
+ 3914 ?        Ssl    0:00 /usr/lib/upower/upowerd
+ 4075 ?        Ssl    0:00 /usr/lib/udisks2/udisksd --no-debug
+10717 ?        I      0:05 [kworker/5:0]
+16114 ?        S      0:00 /usr/lib/cups/notifier/dbus dbus://
+16338 tty7     Ss+    2:00 /usr/lib/xorg/Xorg -core :0 -seat seat0 -auth /var/ru
+16342 ?        Ss     0:00 /usr/bin/nvidia-persistenced --user root --no-persist
+16343 ?        S      0:16 [irq/30-nvidia]
+16344 ?        S      0:00 [nvidia]
+19620 ?        I      0:06 [kworker/0:0]
+21208 ?        I      0:00 [kworker/2:1]
+22934 ?        Sl     0:00 lightdm --session-child 13 20
+22942 ?        I      0:00 [kworker/u16:4]
+22945 ?        Ss     0:00 /lib/systemd/systemd --user
+22947 ?        S      0:00 (sd-pam)
+22951 ?        Ss     0:00 /sbin/upstart --user
+23019 ?        S      0:00 upstart-udev-bridge --daemon --user
+23021 ?        Ss     0:00 ssh-agent -s
+23026 ?        Ss     0:00 dbus-daemon --fork --session --address=unix:abstract=
+23064 ?        S      0:00 upstart-dbus-bridge --daemon --system --user --bus-na
+23066 ?        S      0:00 upstart-dbus-bridge --daemon --session --user --bus-n
+23068 ?        S      0:00 upstart-file-bridge --daemon --user
+23073 ?        Ss     0:00 gpg-agent --homedir /home/qmb2/.gnupg --use-standard-
+23082 ?        Ss     0:00 /bin/sh /etc/xdg/xfce4/xinitrc -- /etc/X11/xinit/xser
+23093 ?        Sl     0:00 xfce4-session
+23097 ?        S      0:00 /usr/lib/x86_64-linux-gnu/xfce4/xfconf/xfconfd
+23104 ?        S      0:06 xfwm4 --replace
+23108 ?        Sl     0:01 xfce4-panel
+23110 ?        Sl     0:05 Thunar --daemon
+23112 ?        Sl     0:01 xfdesktop
+23113 ?        S      0:00 xscreensaver -no-splash
+23115 ?        Sl     0:00 update-notifier
+23116 ?        Sl     0:00 /usr/bin/python3 /usr/bin/blueman-applet
+23117 ?        Ssl    0:00 xfsettingsd
+23119 ?        Sl     0:00 nm-applet
+23122 ?        Sl     0:00 /usr/lib/policykit-1-gnome/polkit-gnome-authenticatio
+23130 ?        Sl     0:00 /usr/bin/python3 /usr/share/system-config-printer/app
+23131 ?        Sl     0:00 light-locker
+23138 ?        Ssl    0:00 xfce4-power-manager
+23143 ?        Ssl    0:00 xfce4-volumed
+23152 ?        Sl     0:00 /usr/lib/dconf/dconf-service
+23160 ?        S<l    0:00 /usr/bin/pulseaudio --start --log-target=syslog
+23164 ?        Sl     0:00 /usr/lib/at-spi2-core/at-spi-bus-launcher
+23169 ?        S      0:00 /usr/bin/dbus-daemon --config-file=/etc/at-spi2/acces
+23175 ?        Sl     0:00 /usr/lib/gvfs/gvfsd
+23176 ?        Sl     0:00 /usr/lib/x86_64-linux-gnu/xfce4/panel/wrapper-1.0 /us
+23182 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-fuse /run/user/51018/gvfs -f -o b
+23197 ?        Sl     0:00 /usr/lib/x86_64-linux-gnu/xfce4/panel/wrapper-2.0 /us
+23203 ?        Sl     0:00 /usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-s
+23223 ?        S      0:00 upstart --user --startup-event indicator-services-sta
+23225 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-messages/indicato
+23226 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-bluetooth/indicat
+23227 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-power/indicator-p
+23228 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-datetime/indicato
+23229 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-keyboard/indicato
+23230 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-sound/indicator-s
+23231 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-session/indicator
+23234 ?        Ssl    0:00 /usr/lib/x86_64-linux-gnu/indicator-application/indic
+23325 ?        Sl     0:00 /usr/lib/gvfs/gvfs-udisks2-volume-monitor
+23330 ?        Sl     0:00 /usr/lib/gvfs/gvfs-gphoto2-volume-monitor
+23335 ?        Sl     0:00 /usr/lib/gvfs/gvfs-goa-volume-monitor
+23340 ?        Sl     0:00 /usr/lib/gvfs/gvfs-afc-volume-monitor
+23346 ?        Sl     0:00 /usr/lib/gvfs/gvfs-mtp-volume-monitor
+23351 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-metadata
+23355 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-trash --spawner :1.26 /org/gtk/gv
+23418 ?        Sl     1:13 /usr/share/code/code --unity-launch
+23420 ?        S      0:00 /usr/share/code/code --type=zygote --no-sandbox
+23452 ?        Sl     1:28 /usr/share/code/code --type=gpu-process --no-sandbox 
+23541 ?        Sl     0:03 /usr/share/code/code --type=renderer --no-sandbox --s
+23640 ?        S      0:00 /usr/lib/bluetooth/obexd
+23705 ?        Sl     0:22 /opt/google/chrome/chrome
+23710 ?        S      0:00 cat
+23711 ?        S      0:00 cat
+23714 ?        S      0:00 /opt/google/chrome/chrome --type=zygote
+23715 ?        S      0:00 /opt/google/chrome/nacl_helper
+23718 ?        S      0:00 /opt/google/chrome/chrome --type=zygote
+23743 ?        Sl     0:12 /opt/google/chrome/chrome --type=gpu-process --field-
+23747 ?        Sl     0:02 /opt/google/chrome/chrome --type=utility --field-tria
+23765 ?        S      0:00 /opt/google/chrome/chrome --type=-broker
+23796 ?        Sl     0:04 /opt/google/chrome/chrome --type=renderer --field-tri
+23812 ?        Sl     0:05 /opt/google/chrome/chrome --type=renderer --field-tri
+23813 ?        Sl     0:00 /opt/google/chrome/chrome --type=renderer --field-tri
+23824 ?        Sl     0:01 /opt/google/chrome/chrome --type=renderer --field-tri
+23833 ?        Sl     0:01 /opt/google/chrome/chrome --type=renderer --field-tri
+24233 ?        Ssl    0:02 /opt/sublime_text/sublime_text /home/qmb2/Desktop/Git
+24244 ?        Sl     0:00 /opt/sublime_text/plugin_host 24233 --auto-shell-env
+24537 ?        I      0:02 [kworker/6:1]
+24621 ?        I      0:00 [kworker/4:3]
+24627 ?        I      0:05 [kworker/4:4]
+26979 ?        Sl     0:01 /usr/bin/xfce4-terminal
+26983 ?        S      0:00 gnome-pty-helper
+27344 ?        I      0:03 [kworker/1:1]
+27964 ?        I      0:00 [kworker/u16:1]
+28176 ?        Sl     0:07 /opt/google/chrome/chrome --type=renderer --field-tri
+28191 ?        Sl     0:00 /opt/google/chrome/chrome --type=renderer --field-tri
+28214 ?        I      0:01 [kworker/0:2]
+28226 ?        I      0:01 [kworker/2:2]
+28303 ?        I      0:00 [kworker/7:0]
+28347 ?        I      0:00 [kworker/3:1]
+28448 ?        I      0:00 [kworker/5:1]
+28482 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-network --spawner :1.26 /org/gtk/
+28491 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-smb-browse --spawner :1.26 /org/g
+28499 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-dnssd --spawner :1.26 /org/gtk/gv
+28508 ?        Sl     0:41 /usr/share/code/code --type=renderer --no-sandbox --s
+28542 ?        Sl     0:06 /usr/share/code/code /usr/share/code/resources/app/ou
+28543 ?        Sl     0:03 /usr/share/code/code --nolazy --inspect=39597 /usr/sh
+28579 ?        Sl     0:00 /usr/share/code/code /usr/share/code/resources/app/ou
+28619 ?        Sl     0:23 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+28668 ?        I      0:01 [kworker/1:2]
+28671 ?        I      0:00 [kworker/6:0]
+28815 pts/13   Ss     0:00 bash
+28869 ?        I      0:01 [kworker/7:1]
+29628 ?        S      0:00 pickup -l -t unix -u -c
+30119 ?        I      0:00 [kworker/3:2]
+30164 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30252 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30293 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30311 ?        Sl     0:00 /home/qmb2/.vscode/extensions/ms-vscode.cpptools-0.22
+30516 ?        I      0:00 [kworker/u16:2]
+30704 pts/13   S+     0:00 script QPShell
+30705 pts/5    Ss     0:00 bash -i
+30711 ?        I      0:03 [kworker/7:2]
+30760 ?        I      0:00 [kworker/2:0]
+30806 pts/5    S+     0:00 ./run
+30819 ?        I      0:00 [kworker/4:0]
+30825 pts/5    Z+     0:00 [run] <defunct>
+30839 pts/5    Z+     0:00 [run] <defunct>
+30857 pts/5    R+     0:00 /bin/ps -ax
+/home/qmb2/Desktop/GitStuff/CS-232/Project 3$ ls -l &
+/home/qmb2/Desktop/GitStuff/CS-232/Project 3$ 
+total 96
+-rw-rw-r-- 1 qmb2 qmb2  2747 Apr 12 18:06 CommandLine.cpp
+-rw-rw-r-- 1 qmb2 qmb2  1309 Apr 12 18:07 CommandLine.h
+-rw-rw-r-- 1 qmb2 qmb2  1614 Apr  6 18:55 Path.cpp
+-rw-rw-r-- 1 qmb2 qmb2   372 Apr  6 18:55 Path.h
+-rw-rw-r-- 1 qmb2 qmb2   449 Apr  5 16:21 Prompt.cpp
+-rw-rw-r-- 1 qmb2 qmb2   247 Apr  9 16:23 Prompt.h
+-rw-rw-r-- 1 qmb2 qmb2  7680 Apr 12 17:56 QPShell.cpp
+-rw-rw-r-- 1 qmb2 qmb2   844 Apr 12 17:56 QPShell.h
+-rwxrwxr-x 1 qmb2 qmb2 52336 Apr 11 19:16 run
+-rw-rw-r-- 1 qmb2 qmb2   238 Apr 12 18:10 run.cpp
+exit
+qmb2@gold34:~/Desktop/GitStuff/cs232Project3$ exit
+exit
+
+Script done on Fri 12 Apr 2019 06:29:03 PM EDT
