@@ -1,13 +1,16 @@
 import java.util.Scanner;
 import java.io.*;
 import java.net.*;
+import java.net.UnknownHostException;
 
 class clientHost {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnknownHostException {
         Scanner keyboard = new Scanner(System.in);
         System.out.print("Enter the rotation amount to be used: ");
         int offset;
         offset = keyboard.nextInt();
+        InetAddress brooksServeAddress = InetAddress.getByName("brooks.cs.calvin.edu");
+
         keyboard.close();
         System.out.print("1 ");
         Socket MyClient = null;
@@ -15,7 +18,7 @@ class clientHost {
         BufferedReader inStream = null;
         try {
             System.out.print("2 ");
-            MyClient = new Socket("brooks.cs.calvin.edu", 9876);
+            MyClient = new Socket(brooksServeAddress, 9876);
             outStream = new DataOutputStream(MyClient.getOutputStream());
             inStream = new BufferedReader(new InputStreamReader(MyClient.getInputStream()));
             System.out.print("3 ");
