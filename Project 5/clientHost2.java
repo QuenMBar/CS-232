@@ -29,26 +29,36 @@ public class clientHost2 {
         System.out.println("IP ADDRESS: " + brooksServeAddress);
         // establish socket connection to server
         Scanner keyboard = new Scanner(System.in);
-        System.out.print("Enter the rotation amount to be used or quit to quit: ");
-        String userIn = keyboard.next();
-        while (userIn != "quit") {
-            socket = new Socket("153.106.116.87", 9876);
+        String userIn = "";
+        System.out.print("Enter the rotation amount to be used: ");
+        Integer rotationAmount = keyboard.nextInt();
+        Boolean firstRun = true;
+        socket = new Socket("153.106.116.238", 9876);
+        oos = new ObjectOutputStream(socket.getOutputStream());
+        ois = new ObjectInputStream(socket.getInputStream());
+        while (!(userIn.equalsIgnoreCase("quit")) || firstRun) {
             // write to socket using ObjectOutputStream
-            oos = new ObjectOutputStream(socket.getOutputStream());
             System.out.println("Sending request to Socket Server");
-            oos.writeObject(12);
+            if (firstRun) {
+                oos.writeObject(Integer.toString(rotationAmount));
+            } else {
+                oos.writeObject(userIn);
+            }
             // read the server response message
             System.out.println("Getting request to Socket Server");
-            ois = new ObjectInputStream(socket.getInputStream());
-            Integer message = (Integer) ois.readObject();
+            String message = (String) ois.readObject();
             System.out.println("Message: " + message);
+            if (message.equals("Invalid rotation given, shutting down socket")) {
+                break;
+            }
             // close resources
-            ois.close();
-            oos.close();
-            Thread.sleep(100);
-            System.out.print("Enter the rotation amount to be used or quit to quit: ");
-            userIn = keyboard.next();
+            firstRun = false;
+            System.out.print("Enter the message or quit to quit: ");
+            userIn = keyboard.nextLine();
         }
+        oos.writeObject("exit");
+        ois.close();
+        oos.close();
         keyboard.close();
         socket.close();
     }
