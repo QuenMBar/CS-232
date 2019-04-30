@@ -1,0 +1,439 @@
+Script started on Tue 30 Apr 2019 03:48:02 PM EDT
+qmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ cat serverHost.t=  java 
+
+/**serverHost.java is a java program that connects to other (can be multiple) clients on 
+ * the calvin network, and, using a tcp connection, is able to recive messages from the 
+ * client and encrypt and decrypt messages based on the Cesar Cipher. Then it sends the 
+ * encrypted message back to the client. This is done by reciving a string from the user, 
+ * and then sending a string back to user.
+ * 
+ * Also holds the serverThread class used for making the program multi-threaded
+ * 
+ * Recives arguemnts for the port of the server
+ * 
+ * Author: Quentin Barnes
+ * Date: Apr 30, 2019
+ */
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.ClassNotFoundException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Vector;
+
+/**
+ * This class implements a java socket server that can encrypt and decrypt
+ * messages Recives arguemnts for the port of the server
+ */
+
+public class serverHost {
+
+    // Creates the server socket
+    private static ServerSocket server;
+
+    public static void main(String args[]) throws IOException, ClassNotFoundException {
+        // Parses the port given and uses it to start the server
+        Integer port = Integer.parseInt(args[0]);
+        server = new ServerSocket(port);
+        int i = 1;
+        System.out.println("Waiting for the client connection");
+        // Until the server is closed or processes 100 requests, the server keeps
+        // running
+        while (true) {
+            // creating socket and waiting for client connection
+            Socket socket = server.accept();
+            // Start the a new socket on a new thread
+            serverThread newThread = new serverThread(socket, i);
+            newThread.start();
+            i++;
+            if (i == 100) {
+                break;
+            }
+        }
+        // close server
+        server.close();
+    }
+
+}
+
+/**
+ * The server thread class is used to create sockets on different threads so
+ * that multiple users can connect to the server at once. It is created by
+ * passing it a socket and a integer to be used as the thread name.
+ */
+class serverThread extends Thread {
+    // Creates private variables to be used in the rest of the program.
+    private Thread t;
+    private Socket mySocket = null;
+    private Integer threadName;
+
+    /**
+     * Constructor class for serverThread class. Recives a socket and an int and
+     * sets mySocket and threadName with them.
+     * 
+     * @param passedSocket
+     * @param i
+     */
+    serverThread(Socket passedSocket, Integer i) {
+        mySocket = passedSocket;
+        threadName = i;
+        System.out.print("Creating " + threadName + " ");
+    }
+
+    /**
+     * This is the function that the newly created thread runs. It recives the
+     * rotation number and then encrypts any message recived after with the cesar
+     * cipher.
+     */
+    public void run() {
+        // Catches IOException and ClassNotFoundException for the socket and its streams
+        try {
+            // Creates variables for the rotationNum and if the program crashed
+            Integer rotationNum = null;
+            Boolean crashed = false;
+            Boolean secondRun = true;
+            // Creates the streams given the socket
+            ObjectInputStream serverInStream = new ObjectInputStream(mySocket.getInputStream());
+            ObjectOutputStream serverOutStream = new ObjectOutputStream(mySocket.getOutputStream());
+            // Gets and sets rotation amount from client
+            String rotationMessage = (String) serverInStream.readObject();
+            System.out.println(threadName + ": Rotation Received: " + rotationMessage);
+            rotationNum = Integer.parseInt(rotationMessage);
+            // Checks to see if rotation number is between 1 and 25
+            if (rotationNum <= 25 && rotationNum >= 1) {
+                serverOutStream.writeObject(Integer.toString(rotationNum));
+            } else {
+                serverOutStream.writeObject("Invalid rotation given, shutting down socket");
+                crashed = true;
+            }
+
+            // While program hasnt crashed and exit message hasnt been recived, keep running
+            while (true && !crashed) {
+                // Read message from client
+                String message = (String) serverInStream.readObject();
+                if (!secondRun) {
+                    System.out.println(threadName + ": Message Received: " + message);
+                }
+                // If exit message, break
+                if (message.equalsIgnoreCase("quit")) {
+                    break;
+                }
+                // Encrypt message
+                message = encryptText(message, rotationNum);
+                if (!secondRun) {
+                    System.out.println(threadName + ": Message Written Back: " + message);
+                }
+                if (secondRun) {
+                    secondRun = false;
+                }
+                // Write message back
+                serverOutStream.writeObject(message);
+            }
+            // Close resources
+            serverInStream.close();
+            serverOutStream.close();
+            mySocket.close();
+            System.out.println("Shutting down Socket server!!");
+
+        } catch (IOException e) {
+            System.out.println(e);
+        } catch (ClassNotFoundException e) {
+            System.out.println(e);
+        }
+    }
+
+    /**
+     * Starts the thread by passing it this and the thread name. Then starts itself
+     * which calls run().
+     */
+    public void start() {
+        System.out.print("Starting " + threadName + "\n");
+        if (t == null) {
+            t = new Thread(this, Integer.toString(threadName));
+            t.start();
+        }
+    }
+
+    /**
+     * Function used to encrypt text with the cesar cipher.
+     * 
+     * @param clientIn
+     * @param rotationAmount
+     * @return serverOut
+     */
+    public static String encryptText(String clientIn, int rotationAmount) {
+        // Create string buffer to return
+        StringBuffer serverOut = new StringBuffer();
+        // For ever character in clientIn
+        for (int i = 0; i < clientIn.length(); i++) {
+            // If character isnt a num or a space convert them, else dont
+            if (Character.isLetter(clientIn.charAt(i)) && clientIn.charAt(i) != ' ') {
+                // if the character is upercase, keep it upper
+                if (Character.isUpperCase(clientIn.charAt(i))) {
+                    // Convert the character using the ascii values of the characters
+                    char newChar = (char) (((int) clientIn.charAt(i) + rotationAmount - 65) % 26 + 65);
+                    serverOut.append(newChar);
+                    // Else keep it lower
+                } else {
+                    // Convert the character using the ascii values of the characters
+                    char newChar = (char) (((int) clientIn.charAt(i) + rotationAmount - 97) % 26 + 97);
+                    serverOut.append(newChar);
+                }
+            } else {
+                serverOut.append(clientIn.charAt(i));
+            }
+        }
+        // Return the encrypted string
+        return serverOut.toString();
+    }
+}
+qmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ javac -deprecation serverHost.java 
+qmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ java serverHost.  7654
+Waiting for the client connection
+Creating 1 Starting 1
+1: Rotation Received: 12
+1: Message Received: Hello, my name is John
+1: Message Written Back: Tqxxa, yk zmyq ue Vatz
+1: Message Received: How are you?
+1: Message Written Back: Tai mdq kag?
+1: Message Received: quit
+Shutting down Socket server!!
+Creating 2 Starting 2
+2: Rotation Received: 14
+2: Message Received: Tqxxa, yk zmyq ue Vatz
+2: Message Written Back: Hello, my name is John
+2: Message Received: Tai mdq kag?
+2: Message Written Back: How are you?
+2: Message Received: quit
+Shutting down Socket server!!
+Creating 3 Starting 3
+3: Rotation Received: 7
+3: Message Received: This message is from client 2
+3: Message Written Back: Aopz tlzzhnl pz myvt jsplua 2
+Creating 4 Starting 4
+4: Rotation Received: 15
+4: Message Received: This message is from client 1
+4: Message Written Back: Iwxh bthhpvt xh ugdb raxtci 1
+3: Message Received: This is a secret message
+3: Message Written Back: Aopz pz h zljyla tlzzhnl
+4: Message Received: Going to wait a bit
+4: Message Written Back: Vdxcv id lpxi p qxi
+3: Message Received: quit
+Shutting down Socket server!!
+Creating 5 Starting 5
+5: Rotation Received: 19
+5: Message Received: Aopz pz h zljyla tlzzhnl
+5: Message Written Back: This is a secret message
+5: Message Received: Goodby john!
+5: Message Written Back: Zhhwur chag!
+5: Message Received: quit
+Shutting down Socket server!!
+Creating 6 Starting 6
+6: Rotation Received: 29
+Shutting down Socket server!!
+Creating 7 Starting 7
+7: Rotation Received: 23
+7: Message Received: This is my final message
+7: Message Written Back: Qefp fp jv cfkxi jbppxdb
+7: Message Received: Goodb from client 2
+7: Message Written Back: Dllay colj zifbkq 2
+4: Message Received: Goodby from client 1
+4: Message Written Back: Vddsqn ugdb raxtci 1
+4: Message Received: quit
+Shutting down Socket server!!
+7: Message Received: quit
+Shutting down Socket server!!
+^Cqmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ exit
+exit
+
+Script done on Tue 30 Apr 2019 03:58:20 PM EDT
+Script started on Tue 30 Apr 2019 03:48:39 PM EDT
+qmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ cat clientHost.java 
+
+/**clientHost.java is a java program that connects to another server on the calvin network, and,
+ * using a tcp connection, is able to ask the server to encrypt and decrypt messages based on
+ * the Cesar Cipher. This is done by sending the server a string, and then reciving a string 
+ * from the server.
+ * 
+ * Recives arguemnts for the address and port of the server
+ * 
+ * Author: Quentin Barnes
+ * Date: Apr 30, 2019
+ */
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Scanner;
+
+/**
+ * This class implements a java socket client that can encrypt and decrypt
+ * messages Recives arguemnts for the address and port of the server
+ */
+public class clientHost {
+
+    public static void main(String[] args)
+            throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException {
+        // Creates empty versions of the socket and its streams
+        Socket mySocket = null;
+        ObjectOutputStream socketOutStream = null;
+        ObjectInputStream socketInStream = null;
+        // Grabs the ip address for the given machine
+        InetAddress myServeAddress = InetAddress.getByName(args[0] + ".cs.calvin.edu");
+        System.out.println("Connecting to: " + myServeAddress);
+        // establish socket connection to server
+        Scanner keyboard = new Scanner(System.in);
+        String userIn = "";
+        // Grabs the rotation abount from user
+        System.out.print("Welcome to the CesarCipher Client.\nEnter the rotation amount to be used to begin: ");
+        Integer rotationAmount = keyboard.nextInt();
+        Boolean firstRun = true;
+        Boolean secondRun = false;
+        // Creates sockets and streams
+        mySocket = new Socket(myServeAddress, Integer.parseInt(args[1]));
+        socketOutStream = new ObjectOutputStream(mySocket.getOutputStream());
+        socketInStream = new ObjectInputStream(mySocket.getInputStream());
+        // While the user doesnt input quit, keep running
+        while (!(userIn.equalsIgnoreCase("quit")) || firstRun) {
+            // First time throuhg, write the rotation abount, after that, write
+            // the users input to the server
+            if (firstRun) {
+                socketOutStream.writeObject(Integer.toString(rotationAmount));
+            } else {
+                socketOutStream.writeObject(userIn);
+            }
+            // Read what the server sends back and output the message
+            String message = (String) socketInStream.readObject();
+            if (!secondRun) {
+                System.out.println("Message: " + message);
+            }
+            // If the server responds with the wrong rotation the first time through,
+            // then print an error and shut down.
+            if (firstRun && Integer.parseInt(message) != rotationAmount) {
+                System.out.println("Error: Different Rotation Recived from server");
+                break;
+            }
+            if (message.equals("Invalid rotation given, shutting down socket")) {
+                break;
+            }
+            if (firstRun) {
+                firstRun = false;
+                secondRun = true;
+            } else if (secondRun) {
+                secondRun = false;
+            }
+            // Get the next input from user
+            if (!secondRun) {
+                System.out.print("Enter the message or quit to quit: ");
+            }
+            userIn = keyboard.nextLine();
+        }
+        // Send the server socket and exit message and close resources
+        socketOutStream.writeObject("quit");
+        socketInStream.close();
+        socketOutStream.close();
+        keyboard.close();
+        mySocket.close();
+    }
+}
+qmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ javac -deprecation clientHost..java 
+qmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost.  marr oon16 7654 [Aqmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 12
+Message: 12
+Enter the message or quit to quit: Hello, my name is Ja ohn
+Message: Tqxxa, yk zmyq ue Vatz
+Enter the message or quit to quit: How are you?
+Message: Tai mdq kag?
+Enter the message or quit to quit: quit
+qmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 [Aqmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 14
+Message: 14
+Enter the message or quit to quit: Tqxxa, yk zmyq ue Vatz
+Message: Hello, my name is John
+Enter the message or quit to quit: Tai mdq kag?
+Message: How are you?
+Enter the message or quit to quit: quit
+qmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 [Aqmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: This messa          15
+Message: 15
+Enter the message or quit to quit: This message is from client 1
+Message: Iwxh bthhpvt xh ugdb raxtci 1
+Enter the message or quit to quit: Going to wait               Going to wait a bit
+Message: Vdxcv id lpxi p qxi
+Enter the message or quit to quit: ^[[A    Goodby from client 1
+Message: Vddsqn ugdb raxtci 1
+Enter the message or quit to quit: quit
+qmb2@maroon15:~/Desktop/GitStuff/CS-232/Project 5$ exit
+exit
+
+Script done on Tue 30 Apr 2019 03:57:57 PM EDT
+Script started on Tue 30 Apr 2019 03:50:46 PM EDT
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost.  maroon  16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 7
+Message: 7
+Enter the message or quit to quit: This message is from machine client 2
+Message: Aopz tlzzhnl pz myvt jsplua 2
+Enter the message or quit to quit: This is a secret message
+Message: Aopz pz h zljyla tlzzhnl
+Enter the message or quit to quit: quit
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 19
+Message: 19
+Enter the message or quit to quit: Aopz pz h zljyla tlzzhnl
+Message: This is a secret message
+Enter the message or quit to quit: Goodby john!
+Message: Zhhwur chag!
+Enter the message or quit to quit: quit
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: no
+Exception in thread "main" java.util.InputMismatchException
+	at java.util.Scanner.throwFor(Scanner.java:864)
+	at java.util.Scanner.next(Scanner.java:1485)
+	at java.util.Scanner.nextInt(Scanner.java:2117)
+	at java.util.Scanner.nextInt(Scanner.java:2076)
+	at clientHost.main(clientHost.java:40)
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 23 9
+Message: Invalid rotation given, shutting down socket
+Exception in thread "main" java.lang.NumberFormatException: For input string: "Invalid rotation given, shutting down socket"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Integer.parseInt(Integer.java:580)
+	at java.lang.Integer.parseInt(Integer.java:615)
+	at clientHost.main(clientHost.java:63)
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 23
+Message: 23
+Enter the message or quit to quit: This is my final message
+Message: Qefp fp jv cfkxi jbppxdb
+Enter the message or quit to quit: ^[[A    Goodb from client 2
+Message: Dllay colj zifbkq 2
+Enter the message or quit to quit: quit
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ exit
+exit
+
+Script done on Tue 30 Apr 2019 03:57:33 PM EDT

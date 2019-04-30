@@ -1,0 +1,60 @@
+Script started on Tue 30 Apr 2019 03:50:46 PM EDT
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost.  maroon  16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 7
+Message: 7
+Enter the message or quit to quit: This message is from machine client 2
+Message: Aopz tlzzhnl pz myvt jsplua 2
+Enter the message or quit to quit: This is a secret message
+Message: Aopz pz h zljyla tlzzhnl
+Enter the message or quit to quit: quit
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 19
+Message: 19
+Enter the message or quit to quit: Aopz pz h zljyla tlzzhnl
+Message: This is a secret message
+Enter the message or quit to quit: Goodby john!
+Message: Zhhwur chag!
+Enter the message or quit to quit: quit
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: no
+Exception in thread "main" java.util.InputMismatchException
+	at java.util.Scanner.throwFor(Scanner.java:864)
+	at java.util.Scanner.next(Scanner.java:1485)
+	at java.util.Scanner.nextInt(Scanner.java:2117)
+	at java.util.Scanner.nextInt(Scanner.java:2076)
+	at clientHost.main(clientHost.java:40)
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 23 9
+Message: Invalid rotation given, shutting down socket
+Exception in thread "main" java.lang.NumberFormatException: For input string: "Invalid rotation given, shutting down socket"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Integer.parseInt(Integer.java:580)
+	at java.lang.Integer.parseInt(Integer.java:615)
+	at clientHost.main(clientHost.java:63)
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 7654 
+[Aqmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ java clientHost maroon16 765[K4
+Connecting to: maroon16.cs.calvin.edu/153.106.116.226
+Welcome to the CesarCipher Client.
+Enter the rotation amount to be used to begin: 23
+Message: 23
+Enter the message or quit to quit: This is my final message
+Message: Qefp fp jv cfkxi jbppxdb
+Enter the message or quit to quit: ^[[A    Goodb from client 2
+Message: Dllay colj zifbkq 2
+Enter the message or quit to quit: quit
+qmb2@maroon05:~/Desktop/GitStuff/CS-232/Project 5$ exit
+exit
+
+Script done on Tue 30 Apr 2019 03:57:33 PM EDT

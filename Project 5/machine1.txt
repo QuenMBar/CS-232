@@ -1,3 +1,5 @@
+Script started on Tue 30 Apr 2019 03:48:02 PM EDT
+qmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ cat serverHost.t=  java 
 
 /**serverHost.java is a java program that connects to other (can be multiple) clients on 
  * the calvin network, and, using a tcp connection, is able to recive messages from the 
@@ -187,3 +189,63 @@ class serverThread extends Thread {
         return serverOut.toString();
     }
 }
+qmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ javac -deprecation serverHost.java 
+qmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ java serverHost.  7654
+Waiting for the client connection
+Creating 1 Starting 1
+1: Rotation Received: 12
+1: Message Received: Hello, my name is John
+1: Message Written Back: Tqxxa, yk zmyq ue Vatz
+1: Message Received: How are you?
+1: Message Written Back: Tai mdq kag?
+1: Message Received: quit
+Shutting down Socket server!!
+Creating 2 Starting 2
+2: Rotation Received: 14
+2: Message Received: Tqxxa, yk zmyq ue Vatz
+2: Message Written Back: Hello, my name is John
+2: Message Received: Tai mdq kag?
+2: Message Written Back: How are you?
+2: Message Received: quit
+Shutting down Socket server!!
+Creating 3 Starting 3
+3: Rotation Received: 7
+3: Message Received: This message is from client 2
+3: Message Written Back: Aopz tlzzhnl pz myvt jsplua 2
+Creating 4 Starting 4
+4: Rotation Received: 15
+4: Message Received: This message is from client 1
+4: Message Written Back: Iwxh bthhpvt xh ugdb raxtci 1
+3: Message Received: This is a secret message
+3: Message Written Back: Aopz pz h zljyla tlzzhnl
+4: Message Received: Going to wait a bit
+4: Message Written Back: Vdxcv id lpxi p qxi
+3: Message Received: quit
+Shutting down Socket server!!
+Creating 5 Starting 5
+5: Rotation Received: 19
+5: Message Received: Aopz pz h zljyla tlzzhnl
+5: Message Written Back: This is a secret message
+5: Message Received: Goodby john!
+5: Message Written Back: Zhhwur chag!
+5: Message Received: quit
+Shutting down Socket server!!
+Creating 6 Starting 6
+6: Rotation Received: 29
+Shutting down Socket server!!
+Creating 7 Starting 7
+7: Rotation Received: 23
+7: Message Received: This is my final message
+7: Message Written Back: Qefp fp jv cfkxi jbppxdb
+7: Message Received: Goodb from client 2
+7: Message Written Back: Dllay colj zifbkq 2
+4: Message Received: Goodby from client 1
+4: Message Written Back: Vddsqn ugdb raxtci 1
+4: Message Received: quit
+Shutting down Socket server!!
+7: Message Received: quit
+Shutting down Socket server!!
+^Cqmb2@maroon16:~/Desktop/GitStuff/CS-232/Project 5$ exit
+exit
+
+Script done on Tue 30 Apr 2019 03:58:20 PM EDT
