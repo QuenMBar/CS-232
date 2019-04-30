@@ -20,10 +20,10 @@ public class serverHost2 {
     // static ServerSocket variable
     private static ServerSocket server;
     // socket server port on which it will listen
-    private static int port = 9876;
 
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         // create the socket server object
+        Integer port = Integer.parseInt(args[0]);
         server = new ServerSocket(port);
         int i = 1;
         // keep listens indefinitely until receives 'exit' call or program terminates
@@ -59,39 +59,40 @@ class serverThread extends Thread {
             Integer rotationNum = null;
             Boolean crashed = false;
             // keep listens indefinitely until receives 'exit' call or program terminates
-            while (true) {
-                System.out.println("Starting socket thread: " + threadName);
-                // creating socket and waiting for client connection
-                ObjectInputStream ois = new ObjectInputStream(mySocket.getInputStream());
-                ObjectOutputStream oos = new ObjectOutputStream(mySocket.getOutputStream());
-                String rotationMessage = (String) ois.readObject();
-                System.out.println("Message Received: " + rotationMessage);
-                rotationNum = Integer.parseInt(rotationMessage);
-                // create ObjectOutputStream object
-                // write object to Socket
-                if (rotationNum <= 25 && rotationNum >= 1) {
-                    oos.writeObject("Set the rotation to " + rotationNum);
-                } else {
-                    oos.writeObject("Invalid rotation given, shutting down socket");
-                    crashed = true;
-                }
-
-                while (true && !crashed) {
-                    String message = (String) ois.readObject();
-                    System.out.println("Message Received: " + message);
-                    if (message.equalsIgnoreCase("exit")) {
-                        break;
-                    }
-                    message = encrypt(message, rotationNum).toString();
-                    System.out.println("Message Written Back: " + message);
-                    oos.writeObject(message);
-                }
-                ois.close();
-                oos.close();
-                mySocket.close();
-                System.out.println("Shutting down Socket server!!");
+            System.out.println("Starting socket thread: " + threadName);
+            // creating socket and waiting for client connection
+            ObjectInputStream ois = new ObjectInputStream(mySocket.getInputStream());
+            ObjectOutputStream oos = new ObjectOutputStream(mySocket.getOutputStream());
+            String rotationMessage = (String) ois.readObject();
+            System.out.println("Message Received: " + rotationMessage);
+            rotationNum = Integer.parseInt(rotationMessage);
+            // create ObjectOutputStream object
+            // write object to Socket
+            if (rotationNum <= 25 && rotationNum >= 1) {
+                oos.writeObject("Set the rotation to " + rotationNum);
+            } else {
+                oos.writeObject("Invalid rotation given, shutting down socket");
+                crashed = true;
             }
-        } catch (IOException e) {
+
+            while (true && !crashed) {
+                String message = (String) ois.readObject();
+                System.out.println("Message Received: " + message);
+                if (message.equalsIgnoreCase("exit")) {
+                    break;
+                }
+                message = encrypt(message, rotationNum).toString();
+                System.out.println("Message Written Back: " + message);
+                oos.writeObject(message);
+            }
+            ois.close();
+            oos.close();
+            mySocket.close();
+            System.out.println("Shutting down Socket server!!");
+
+        } catch (
+
+        IOException e) {
             System.out.println(e);
         } catch (ClassNotFoundException e) {
             System.out.println(e);

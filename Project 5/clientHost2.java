@@ -25,7 +25,7 @@ public class clientHost2 {
         Socket socket = null;
         ObjectOutputStream oos = null;
         ObjectInputStream ois = null;
-        InetAddress brooksServeAddress = InetAddress.getByName("brooks.cs.calvin.edu");
+        InetAddress brooksServeAddress = InetAddress.getByName(args[0] + ".cs.calvin.edu");
         System.out.println("IP ADDRESS: " + brooksServeAddress);
         // establish socket connection to server
         Scanner keyboard = new Scanner(System.in);
@@ -33,7 +33,7 @@ public class clientHost2 {
         System.out.print("Enter the rotation amount to be used: ");
         Integer rotationAmount = keyboard.nextInt();
         Boolean firstRun = true;
-        socket = new Socket("153.106.116.238", 9876);
+        socket = new Socket(brooksServeAddress, Integer.parseInt(args[1]));
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream());
         while (!(userIn.equalsIgnoreCase("quit")) || firstRun) {
